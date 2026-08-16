@@ -1,0 +1,39 @@
+{
+  "name": "Pedro Albertasse — portfólio",
+  "short_name": "P. Albertasse",
+  "description": "Engenheiro de dados, IA aplicada e games. 14 aplicações internas, 10 agentes de IA em produção e 4 estudos que viraram matéria na imprensa de negócios.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#040404",
+  "theme_color": "#040404",
+  "lang": "pt-BR",
+  "categories": [
+    "portfolio",
+    "business",
+    "developer"
+  ],
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "og.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Página inicial do portfólio"
+    }
+  ]
+}

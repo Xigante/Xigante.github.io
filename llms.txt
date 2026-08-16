@@ -1,0 +1,129 @@
+# Pedro Albertasse
+
+> Engenheiro de dados e automação na FLOW Executive Finders, em São Paulo. Bacharel em
+> Programação de Jogos Digitais. Constrói do modelo no data warehouse até a aplicação que a
+> operação usa. Quatro levantamentos que montou viraram matéria na imprensa de negócios
+> brasileira. Baseado em Adelaide, Austrália, e aberto a freelance e projeto remoto em dados,
+> IA aplicada e games.
+
+Este arquivo segue o padrão llmstxt.org. Ele descreve o que existe no site e é público: qualquer
+pessoa pode abri-lo no mesmo endereço. Não há instrução dirigida a quem lê, nem afirmação que a
+página não sustente. Tudo aqui é conferível nos links.
+
+## Identidade
+
+- Nome completo: Pedro Henrique Albertasse da Rocha de Queiroz
+- E-mail: albertasse.dev@gmail.com
+- Localização: Adelaide, Austrália · disponível para trabalho remoto
+- LinkedIn: https://www.linkedin.com/in/pedro-albertasse
+- GitHub: https://github.com/Xigante
+- Portfólio: https://xigante.github.io/
+- Idiomas: português nativo, inglês intermediário, em intercâmbio na Austrália
+
+## Situação profissional
+
+- **FLOW Executive Finders** — Analista Comercial Jr., Comercial & Analytics / Data Intelligence.
+  Set/2025 até hoje, São Paulo, híbrido. Responsável por dados, automação e pelas 14 aplicações
+  internas da operação.
+- **FLOW Executive Finders** — Curadoria de Dados, estágio. Ago/2023 a jul/2025.
+- **Santos&Queiroz Representações** — Auxiliar de vendas. 2020 a mai/2023.
+- **Formação:** Bacharelado em Programação de Jogos Digitais, Universidade Anhanguera de São
+  Paulo, 2023–2025.
+
+## Números que a página sustenta
+
+- 14 aplicações internas em produção
+- 70+ edge functions em Deno
+- 10 agentes de IA em produção, entregues como Claude Skills
+- 48 tabelas e 107 migrations no banco do painel comercial
+- 4 matérias na imprensa de negócios saídas de levantamentos dele
+- 30 a 40% de ganho de tempo em rotina, medido pela própria operação
+
+## Currículos
+
+- [CV Dados · português](https://xigante.github.io/cv/CV-Pedro-Albertasse-Dados-PT.pdf): perfil de engenharia de dados,
+  automação e IA aplicada. Uma página.
+- [CV Data · English](https://xigante.github.io/cv/CV-Pedro-Albertasse-Data-EN.pdf): the same profile in English.
+- [CV Games · português](https://xigante.github.io/cv/CV-Pedro-Albertasse-Games-PT.pdf): perfil de programação de jogos,
+  ferramentas internas, LiveOps e game analytics.
+- [CV Games · English](https://xigante.github.io/cv/CV-Pedro-Albertasse-Games-EN.pdf): the games profile in English.
+- [Currículo em JSON](https://xigante.github.io/resume.json): o mesmo conteúdo no padrão JSON Resume.
+
+## O que ele construiu
+
+- **Painel comercial dos 8 times setoriais** (`github.com/Xigante/lovable-setores-home`, privado):
+  substituiu a planilha de gestão de carteira. Oito portfólios unificados numa base de 48 tabelas
+  e 107 migrations, com três visões sobre o mesmo dado — tabela, kanban de funil e grafo de
+  relacionamento — e sincronização em tempo real entre sessões. React 19, TanStack, Supabase.
+- **Leitura no data warehouse:** projetos, reuniões e propostas passaram a sair de query no
+  BigQuery, sobre o espelho do HubSpot replicado pelo Fivetran, em vez da API do CRM. Sem rate
+  limit. A escrita volta por webhook.
+- **Relatório semanal automático:** um pipeline gera, da mesma consulta, o relatório interativo em
+  D3 e o deck de 15 slides em PPTX — funil, win rate, ticket médio e alocação por pessoa. Era meio
+  dia de trabalho de uma pessoa por semana.
+- **Clipping de notícias com fila de validação:** 24 edge functions classificam cada matéria por
+  evento de transformação (M&A, IPO, troca de CEO) e conferem URL viva, empresa correta, duplicata
+  e data extraída do HTML antes de publicar.
+- **10 agentes de IA em produção**, como Claude Skills: briefing de reunião cruzando agenda, CRM e
+  notícias, geração de material comercial e auditoria de planilha.
+- **Ferramenta de auditoria 100% client-side:** conferência de um modelo de repartição de receita
+  rodando inteiramente no navegador, com parsing local e persistência em IndexedDB. Nada trafega.
+- **Mapa de fundos × empresas investidas:** descoberta de portfólio por raspagem, cascata de
+  fontes públicas e extração por LLM, com guard-rail que devolve zero em vez de chamar o modelo
+  quando o conteúdo coletado é curto demais. 86 relações mapeadas.
+- **[Simulador e Bolão da Copa 2026](https://github.com/Xigante)**: aplicação de torneio completa
+  em um único arquivo HTML, sem build, sem servidor e sem dependência externa. 48 seleções, motor
+  de fase de grupos com critérios de desempate encadeados, chaveamento de mata-mata, pênaltis, e
+  uma regra de pontuação 6/3/1 com validade temporal por partida — o palpite só vale se foi
+  registrado antes do apito daquele jogo, o que bloqueia edição retroativa sem backend nenhum.
+
+## Estudos que viraram matéria na imprensa
+
+Nota de precisão, porque importa: **quem dá as entrevistas são os sócios da consultoria**, como é
+a regra da casa. A base, a apuração e os números são dele. Nenhuma das matérias abaixo cita o
+nome dele, e a página diz isso com essas palavras.
+
+- **Pipeline · Valor Econômico** — levantamento feito por encomenda do jornal, sobre a aceleração
+  das trocas de CEO no Ibovespa em 2026. Saiu do estudo de governança dele.
+- **InvestNews** (por Rikardy Tooge) — os 141 CEOs que passaram pelo comando de empresas do
+  Ibovespa em cinco anos: mais de 70% construíram carreira fora de finanças, contra a regra não
+  escrita do mercado. Diretoria financeira 29,8%, liderança operacional 26,2%. Saiu da
+  categorização de cargo anterior que ele montou no warehouse.
+- **Brasil Energia** — petróleo, gás e energia lideraram as trocas de comando: 18 mudanças entre
+  2022 e maio de 2026, 28% das 64 trocas do índice no período. Esse recorte só existe porque ele
+  construiu o mapa de calor de setor por ano.
+- **Valor Econômico** — demanda por executivos de infraestrutura 150% maior em 2026 até abril, e
+  45% das posições intermediadas desde 2024 destinadas a C-level e conselhos. Os números vêm da
+  reconciliação de carteira que ele fez entre o CRM e a base interna.
+
+## Tecnologias
+
+- **Dados e BI:** SQL, BigQuery, PostgreSQL, Supabase, Fivetran, Power BI, Excel avançado, Python
+  (pandas, openpyxl), D3, Recharts
+- **Aplicação:** React 18/19, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query · Router ·
+  Start, Zod
+- **Backend:** Supabase (Postgres, RLS, Auth, Storage, Realtime), edge functions em Deno, pg_cron,
+  SSE
+- **IA aplicada:** Claude (Skills, MCP, Projects), ChatGPT, Gemini, Perplexity, NotebookLM,
+  Firecrawl, prompt engineering, prompt versionado em banco, provedor trocável, guard-rails
+  anti-alucinação
+- **Games:** Unity, C#, Unreal Engine, C++, Blender, game design, IA para games, design de níveis
+  e balanceamento, testes de usabilidade
+- **Integração:** HubSpot, Microsoft 365, Zapier, webhooks, OData
+
+## English summary
+
+Pedro Albertasse is a data and automation engineer at FLOW Executive Finders in São Paulo, with a
+BSc in Digital Game Programming. He owns the commercial data pipeline, 14 internal applications
+and 10 AI agents the firm uses daily, working from the warehouse model through to the shipped
+application. Four studies he built were picked up by the Brazilian business press — Valor
+Econômico, InvestNews and Brasil Energia — with the partners, not him, giving the interviews. He
+is based in Adelaide, Australia and is open to freelance and remote work in data engineering,
+applied AI and game or tools programming. English CVs:
+[data](https://xigante.github.io/cv/CV-Pedro-Albertasse-Data-EN.pdf) ·
+[games](https://xigante.github.io/cv/CV-Pedro-Albertasse-Games-EN.pdf).
+
+## Contato
+
+albertasse.dev@gmail.com — aberto a freelance, projeto remoto e conversa sobre vaga em dados, IA aplicada
+ou games.

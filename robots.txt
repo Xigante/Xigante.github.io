@@ -1,0 +1,8 @@
+# Tudo aqui é público e pode ser indexado, inclusive por assistente de IA.
+# Há um resumo em markdown pronto para leitura de máquina em https://xigante.github.io/llms.txt
+# e o currículo em JSON Resume em https://xigante.github.io/resume.json
+
+User-agent: *
+Allow: /
+
+Sitemap: https://xigante.github.io/sitemap.xml

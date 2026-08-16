@@ -1,0 +1,243 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+  "basics": {
+    "name": "Pedro Henrique Albertasse da Rocha de Queiroz",
+    "label": "Engenheiro de Dados e Automação · Data & Automation Engineer",
+    "image": "https://xigante.github.io/og.png",
+    "email": "albertasse.dev@gmail.com",
+    "url": "https://xigante.github.io/",
+    "summary": "I joined FLOW Executive Finders, an executive search firm in São Paulo, as a data curation intern. The commercial pipeline, the 14 internal applications and the 10 AI agents the team uses every day are now mine to run, from the warehouse model through to the screen somebody opens on Monday morning. Four of the studies I built on companies in Brazil's main stock index became articles in the national business press. My degree is in digital game programming, and that is the road I took into data.",
+    "location": {
+      "city": "Adelaide",
+      "region": "South Australia",
+      "countryCode": "AU"
+    },
+    "profiles": [
+      {
+        "network": "LinkedIn",
+        "username": "pedro-albertasse",
+        "url": "https://www.linkedin.com/in/pedro-albertasse"
+      },
+      {
+        "network": "GitHub",
+        "username": "Xigante",
+        "url": "https://github.com/Xigante"
+      }
+    ]
+  },
+  "work": [
+    {
+      "name": "FLOW Executive Finders",
+      "position": "Commercial Analyst Jr. — Commercial & Analytics / Data Intelligence",
+      "location": "São Paulo, Brazil",
+      "url": "https://www.flowef.com",
+      "startDate": "2025-09",
+      "summary": "Owner of data, automation and every internal application the operation runs on.",
+      "highlights": [
+        "Built the commercial dashboard for all 8 sector teams: 48 tables, 107 migrations, three views over one base, realtime sync across sessions.",
+        "Moved reads onto BigQuery over the HubSpot mirror replicated by Fivetran; writes return through a webhook.",
+        "Automated the weekly team report: one pipeline renders an interactive D3 report and a 15-slide PPTX deck from a single query.",
+        "Shipped a news clipping service with a validation queue and 24 Deno edge functions classifying articles by transformation event.",
+        "Put 10 AI agents into production as Claude Skills; the team measured 30 to 40% time saved on routine work."
+      ]
+    },
+    {
+      "name": "FLOW Executive Finders",
+      "position": "Data Curation — internship",
+      "location": "São Paulo, Brazil",
+      "startDate": "2023-08",
+      "endDate": "2025-07",
+      "summary": "Cleaning, standardising and enriching the executive and company database, the quality layer everything downstream leans on.",
+      "highlights": [
+        "Power BI dashboards and recurring reports for the commercial, finance and delivery teams."
+      ]
+    },
+    {
+      "name": "Santos&Queiroz Representações",
+      "position": "Sales Assistant",
+      "location": "São Paulo region, Brazil",
+      "startDate": "2020-01",
+      "endDate": "2023-05",
+      "summary": "Sales tracking and commission flow control, prospecting and account servicing."
+    }
+  ],
+  "education": [
+    {
+      "institution": "Universidade Anhanguera de São Paulo",
+      "area": "Digital Game Programming",
+      "studyType": "Bachelor of Science",
+      "startDate": "2023-01",
+      "endDate": "2025-12",
+      "courses": [
+        "Unity",
+        "C#",
+        "AI for games",
+        "Level design",
+        "Difficulty balancing",
+        "Usability testing",
+        "3D modelling with Blender"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Data & BI",
+      "level": "Advanced",
+      "keywords": [
+        "SQL",
+        "BigQuery",
+        "PostgreSQL",
+        "Supabase",
+        "Fivetran",
+        "Power BI",
+        "Python",
+        "pandas",
+        "D3.js",
+        "Recharts",
+        "Data warehouse"
+      ]
+    },
+    {
+      "name": "Application",
+      "level": "Advanced",
+      "keywords": [
+        "React",
+        "TypeScript",
+        "Vite",
+        "Tailwind CSS",
+        "shadcn/ui",
+        "TanStack Query",
+        "TanStack Router",
+        "TanStack Start",
+        "Zod"
+      ]
+    },
+    {
+      "name": "Backend",
+      "level": "Intermediate",
+      "keywords": [
+        "Supabase",
+        "PostgreSQL RLS",
+        "Deno edge functions",
+        "pg_cron",
+        "SSE",
+        "Webhooks",
+        "OData"
+      ]
+    },
+    {
+      "name": "Applied AI",
+      "level": "Advanced",
+      "keywords": [
+        "Claude Skills",
+        "Model Context Protocol",
+        "Prompt engineering",
+        "LLM guard-rails",
+        "Firecrawl",
+        "Retrieval",
+        "Agent design"
+      ]
+    },
+    {
+      "name": "Games",
+      "level": "Intermediate",
+      "keywords": [
+        "Unity",
+        "C#",
+        "Unreal Engine",
+        "C++",
+        "Blender",
+        "Game design",
+        "AI for games",
+        "Level design",
+        "Game analytics",
+        "LiveOps",
+        "Telemetry"
+      ]
+    }
+  ],
+  "languages": [
+    {
+      "language": "Portuguese",
+      "fluency": "Native speaker"
+    },
+    {
+      "language": "English",
+      "fluency": "Intermediate — studying in Australia"
+    }
+  ],
+  "projects": [
+    {
+      "name": "2026 World Cup Simulator & Prediction Pool",
+      "description": "A complete tournament application in one HTML file, no build step, no server and no external dependency: 48 national teams, a group-stage engine with chained tie-breaks, a knockout bracket, penalty shootouts, and a 6/3/1 scoring rule with per-match temporal validity that blocks retroactive predictions without a backend.",
+      "keywords": [
+        "JavaScript",
+        "Game systems",
+        "State machines",
+        "localStorage",
+        "Single-file app"
+      ],
+      "startDate": "2026-01",
+      "url": "https://github.com/Xigante",
+      "roles": [
+        "Concept",
+        "Game design",
+        "Programming"
+      ]
+    },
+    {
+      "name": "Commercial dashboard for 8 sector teams",
+      "description": "Replaced the portfolio management spreadsheet: eight tables consolidated into one base of 48 tables and 107 migrations, three views over the same data (table, funnel kanban, relationship graph) and realtime sync across sessions.",
+      "keywords": [
+        "React 19",
+        "TanStack",
+        "Supabase",
+        "PostgreSQL",
+        "Realtime"
+      ],
+      "startDate": "2025-10"
+    },
+    {
+      "name": "CEO turnover study — Ibovespa 2021–2026",
+      "description": "Audit of 60 CEO changes across the 79 companies in Brazil's main stock index over five two-year windows, with a sector-by-year heat map. The study behind articles in Valor Econômico and Brasil Energia.",
+      "keywords": [
+        "Data analysis",
+        "Governance",
+        "Research"
+      ],
+      "startDate": "2026-01"
+    }
+  ],
+  "publications": [
+    {
+      "name": "Estudo de trocas de CEO no Ibovespa — base da matéria do Pipeline",
+      "publisher": "Valor Econômico",
+      "releaseDate": "2026-02",
+      "summary": "Levantamento produzido por encomenda do jornal sobre a aceleração das trocas de CEO em 2026. O estudo é de Pedro Albertasse; a entrevista foi dada por sócio da consultoria."
+    },
+    {
+      "name": "Trajetória dos 141 CEOs do Ibovespa — base da matéria da InvestNews",
+      "publisher": "InvestNews",
+      "releaseDate": "2026-06",
+      "summary": "Mais de 70% dos CEOs do índice construíram carreira fora de finanças. Achado produzido pela categorização de cargo anterior que ele montou no data warehouse."
+    },
+    {
+      "name": "Recorte setorial de energia — base da matéria da Brasil Energia",
+      "publisher": "Brasil Energia",
+      "releaseDate": "2026-03",
+      "summary": "Petróleo, gás e energia responderam por 18 das 64 trocas de CEO do índice entre 2022 e maio de 2026. O recorte vem do mapa de calor de setor por ano construído por ele."
+    },
+    {
+      "name": "Demanda por executivos de infraestrutura — base da matéria do Valor",
+      "publisher": "Valor Econômico",
+      "releaseDate": "2026-05",
+      "summary": "Alta de 150% na demanda em 2026 e 45% das posições em C-level e conselho. Números saídos da reconciliação de carteira entre CRM e base interna."
+    }
+  ],
+  "meta": {
+    "canonical": "https://xigante.github.io/resume.json",
+    "version": "1.0.0",
+    "theme": "jsonresume",
+    "lastModified": "2026-08-16"
+  }
+}
