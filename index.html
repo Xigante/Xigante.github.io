@@ -847,6 +847,15 @@ section{scroll-margin-top:112px}
 .konami b{line-height:1.9}
 .hud .p1,.hud .who,.hud .lvl{line-height:1.7}
 
+/* botão de som do jogo */
+.stage-top{gap:10px}
+.som-btn{min-height:40px;padding:10px 14px;border-radius:999px;border:1px solid var(--line-2);
+         background:var(--surface);color:var(--text-2);font-size:8px;letter-spacing:.08em;line-height:1.9;
+         transition:color .2s,border-color .2s,background .2s;margin-left:auto}
+.som-btn:hover{color:var(--text);border-color:var(--text-2)}
+.som-btn[aria-pressed="true"]{color:var(--yellow);border-color:color-mix(in srgb,var(--yellow) 40%,var(--line-2))}
+.play-btn{margin-left:0}
+
 </style>
 </head>
 <body>
@@ -1633,6 +1642,7 @@ section{scroll-margin-top:112px}
               <span class="sc-h">HI <b id="gBest">0000</b></span>
               <span class="sc-p"><b id="gPts">0000</b></span>
             </div>
+            <button class="som-btn pixfont" id="somBtn" aria-pressed="true" aria-label="Som ligado">♪ SOM</button>
             <button class="play-btn" id="playBtn" aria-pressed="false">
               <span class="l-pt">▶ Jogar</span><span class="l-en">▶ Play</span>
             </button>
@@ -2054,6 +2064,171 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     if (elPts) elPts.textContent = '0000';
   }
 
+  /* ═══════════════════ TRILHA 8-BIT ═══════════════════
+     Nada de arquivo de áudio: a música é sintetizada na hora com Web Audio.
+     Custa ~3 KB de código, não pesa no download e não tem questão de direito
+     autoral, porque a melodia é escrita aqui embaixo, nota por nota.
+
+     Para trocar a música, mexa em LEAD / BAIXO / PERC. São números MIDI
+     (60 = dó central, 69 = lá do diapasão) e 0 é silêncio. Cada posição é
+     uma colcheia. BPM controla a velocidade base. */
+  var BPM = 132;
+  var LEAD = [
+    76, 0, 79, 0, 81, 0, 79, 76,
+    74, 0, 76, 0, 79, 0, 76, 74,
+    72, 0, 76, 0, 79, 0, 81, 83,
+    84, 0, 81, 0, 79, 76, 74, 72
+  ];
+  var BAIXO = [
+    45, 0, 45, 45, 45, 0, 45, 0,
+    41, 0, 41, 41, 41, 0, 41, 0,
+    43, 0, 43, 43, 43, 0, 43, 0,
+    45, 0, 45, 45, 40, 0, 42, 0
+  ];
+  var PERC = [
+    1, 2, 0, 2, 1, 2, 0, 2,
+    1, 2, 0, 2, 1, 2, 3, 2,
+    1, 2, 0, 2, 1, 2, 0, 2,
+    1, 2, 0, 2, 1, 2, 3, 3
+  ];
+
+  var AC = null, MASTER = null, somLigado = true, tocando = false;
+  var passoMus = 0, proxNota = 0, relogio = null;
+  var btSom = document.getElementById('somBtn');
+
+  try { somLigado = localStorage.getItem('pa_run_som') !== 'off'; } catch (e) {}
+
+  function freq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+  function audio() {
+    if (!AC) {
+      var A = window.AudioContext || window.webkitAudioContext;
+      if (!A) return null;
+      AC = new A();
+      MASTER = AC.createGain();
+      MASTER.gain.value = .5;
+      var comp = AC.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.ratio.value = 8;
+      MASTER.connect(comp); comp.connect(AC.destination);
+    }
+    if (AC.state === 'suspended') { try { AC.resume(); } catch (e) {} }
+    return AC;
+  }
+
+  /* uma voz: onda + envelope curto, que é o que dá o caráter de console antigo */
+  function voz(midi, t, dur, tipo, vol, detune) {
+    if (!AC) return;
+    var o = AC.createOscillator(), g = AC.createGain();
+    o.type = tipo;
+    o.frequency.setValueAtTime(freq(midi), t);
+    if (detune) o.detune.setValueAtTime(detune, t);
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + .006);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(MASTER);
+    o.start(t); o.stop(t + dur + .03);
+  }
+
+  function ruido(t, dur, vol, corte) {
+    if (!AC) return;
+    var n = Math.max(1, Math.floor(AC.sampleRate * dur));
+    var buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    var s = AC.createBufferSource(); s.buffer = buf;
+    var f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = corte || 2200;
+    var g = AC.createGain(); g.gain.value = vol;
+    s.connect(f); f.connect(g); g.connect(MASTER);
+    s.start(t);
+  }
+
+  /* o passo da colcheia encurta conforme o jogo acelera */
+  function durPasso() {
+    var extra = st.jogando && !jogo.over ? (jogo.spd - 4.4) / 30 : 0;
+    return (60 / BPM / 2) / (1 + extra);
+  }
+
+  function agendar() {
+    if (!AC || !tocando) return;
+    var d = durPasso();
+    while (proxNota < AC.currentTime + .14) {
+      var i = passoMus % LEAD.length;
+      var t = Math.max(proxNota, AC.currentTime + .01);
+      if (LEAD[i])  voz(LEAD[i],  t, d * .9,  'square',   .16, 6);
+      if (BAIXO[i]) voz(BAIXO[i], t, d * 1.1, 'triangle', .30);
+      if (PERC[i] === 1) { voz(40, t, .1, 'sine', .34); ruido(t, .05, .12, 900); }
+      if (PERC[i] === 2) ruido(t, .035, .05);
+      if (PERC[i] === 3) ruido(t, .09, .10, 1400);
+      passoMus++;
+      proxNota += d;
+    }
+  }
+
+  function musica(on) {
+    if (on) {
+      if (!somLigado || !audio()) return;
+      if (tocando) return;
+      tocando = true;
+      passoMus = 0;
+      proxNota = AC.currentTime + .06;
+      clearInterval(relogio);
+      relogio = setInterval(agendar, 25);
+      agendar();
+    } else {
+      tocando = false;
+      clearInterval(relogio);
+      relogio = null;
+    }
+  }
+
+  /* ── efeitos ── */
+  function sfxPulo() {
+    if (!somLigado || !audio()) return;
+    var t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(520, t);
+    o.frequency.exponentialRampToValueAtTime(1180, t + .09);
+    g.gain.setValueAtTime(.22, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + .12);
+    o.connect(g); g.connect(MASTER); o.start(t); o.stop(t + .14);
+  }
+  function sfxMoeda() {
+    if (!somLigado || !audio()) return;
+    var t = AC.currentTime;
+    voz(88, t, .07, 'square', .22);
+    voz(95, t + .07, .16, 'square', .20);
+  }
+  function sfxBatida() {
+    if (!somLigado || !audio()) return;
+    var t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(340, t);
+    o.frequency.exponentialRampToValueAtTime(48, t + .38);
+    g.gain.setValueAtTime(.3, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + .42);
+    o.connect(g); g.connect(MASTER); o.start(t); o.stop(t + .45);
+    ruido(t, .18, .18, 600);
+    [72, 69, 65, 60].forEach(function (m, i) { voz(m, t + .16 + i * .11, .16, 'square', .18); });
+  }
+
+  function pintaSom() {
+    if (!btSom) return;
+    btSom.setAttribute('aria-pressed', somLigado ? 'true' : 'false');
+    btSom.textContent = somLigado ? '♪ SOM' : '♪ MUDO';
+    btSom.setAttribute('aria-label', somLigado
+      ? 'Som ligado. Clique para desligar. / Sound on, click to mute.'
+      : 'Som desligado. Clique para ligar. / Sound off, click to unmute.');
+  }
+  if (btSom) {
+    pintaSom();
+    btSom.addEventListener('click', function () {
+      somLigado = !somLigado;
+      try { localStorage.setItem('pa_run_som', somLigado ? 'on' : 'off'); } catch (e) {}
+      pintaSom();
+      if (!somLigado) musica(false);
+      else if (st.jogando && !jogo.over) musica(true);
+    });
+  }
+
   /* ── conquista (também usada pelo código secreto) ── */
   function conquista() {
     var el = document.getElementById('ach');
@@ -2064,6 +2239,7 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
 
   function pegouMoeda() {
     jogo.moedas++;
+    sfxMoeda();
     if (cnt) cnt.textContent = '×' + jogo.moedas;
     if (elCoins) elCoins.textContent = jogo.moedas;
     if (jogo.moedas === 5) {
@@ -2087,6 +2263,7 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     if (hero.chao) {
       hero.vy = PULO; hero.chao = false; hero.abaixado = false; hero.h = ALT;
       faisca(hero.x + hero.w / 2, CHAO, '#8a8781', 5);
+      sfxPulo();
     }
   }
   function abaixar(on) {
@@ -2106,6 +2283,8 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
 
   function morrer() {
     jogo.over = true;
+    musica(false);
+    sfxBatida();
     faisca(hero.x + hero.w / 2, hero.y + hero.h / 2, '#FF6B4A', 14);
     if (jogo.pts > jogo.best) {
       jogo.best = jogo.pts;
@@ -2297,12 +2476,14 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     if (playBtn) playBtn.setAttribute('aria-pressed', 'true');
     if (field) field.classList.add('jogando');
     if (gLive) gLive.textContent = PT() ? 'Jogo iniciado.' : 'Game started.';
+    musica(true);
     try { field.focus({ preventScroll: true }); } catch (e) { }
   }
   function reiniciar() { comecar(); }
   function sair() {
     st.jogando = false;
     jogo.over = false;
+    musica(false);
     obst = []; moedas = [];
     if (playBtn) playBtn.setAttribute('aria-pressed', 'false');
     if (field) field.classList.remove('jogando');
@@ -2373,6 +2554,7 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
         visivel = es[0].isIntersecting;
         ligar(visivel);
         if (!visivel && st.jogando) sair();
+        if (!visivel) musica(false);
       }, { threshold: .18 }).observe(field);
     } else { ligar(true); }
 
@@ -2380,6 +2562,10 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     window.addEventListener('resize', function () {
       clearTimeout(reTmr);
       reTmr = setTimeout(function () { medir(); semear(); }, 160);
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) musica(false);
+      else if (st.jogando && !jogo.over) musica(true);
     });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(pinta);
   }
