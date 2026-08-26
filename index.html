@@ -962,24 +962,20 @@ section{scroll-margin-top:112px}
   .mesh i{animation:none!important}
 }
 
-/* A máscara é o que impede o jogo de sujar a leitura: no miolo, onde ficam a
-   headline e o lede, o canvas aparece a ~15% de opacidade. Um tiro que
-   atravessa a área do texto vira um risco fantasma em vez de ruído. */
-#naves{
-  -webkit-mask-image:radial-gradient(66% 50% at 50% 45%,
-    rgba(0,0,0,.13) 0%, rgba(0,0,0,.2) 38%, rgba(0,0,0,.62) 66%, #000 84%);
-          mask-image:radial-gradient(66% 50% at 50% 45%,
-    rgba(0,0,0,.13) 0%, rgba(0,0,0,.2) 38%, rgba(0,0,0,.62) 66%, #000 84%);
-}
-/* Em tela estreita o texto ocupa quase tudo: a máscara fecha mais e o jogo
-   fica só nas beiradas de cima e de baixo. */
-@media(max-width:760px){
-  #naves{opacity:.8;
-    -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.12) 26%,
-      rgba(0,0,0,.12) 74%,#000 100%);
-            mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.12) 26%,
-      rgba(0,0,0,.12) 74%,#000 100%)}
-}
+/* Aqui havia uma máscara radial em #naves para apagar o jogo no miolo, onde
+   fica o texto. Funcionava e custava caro: máscara CSS sobre um canvas que
+   repinta a cada quadro força uma passada de composição por quadro, e o custo
+   escala com a área. Medido:
+
+     1440×800   com máscara 51,6 fps · sem 61,2
+     1400×860   com máscara 38,5 fps · sem 61,3
+     1920×1080  com máscara 28,9 fps · sem 42,1
+
+   O mesmo efeito agora é feito DENTRO do canvas: um véu escuro pré-renderizado
+   em baixa resolução, blitado com um drawImage por quadro. Ver `veu` em
+   page_naves.html. */
+#naves{opacity:.95}
+@media(max-width:760px){#naves{opacity:.85}}
 
 /* =========================================================================
    CUSTO DE QUADRO — o que foi medido e o que mudou
@@ -1058,6 +1054,112 @@ section{scroll-margin-top:112px}
 .langmenu li[aria-selected="true"] b{color:var(--yellow)}
 @media(pointer:coarse){.langmenu li{min-height:44px}}
 
+/* =========================================================================
+   HERO — ANIMAÇÃO DA TIPOGRAFIA
+
+   O fundo já se move. Isto tira o texto da imobilidade sem competir com ele.
+   A entrada é escalonada por letra; o resto do movimento é mínimo e lento.
+
+   A regra .js-hero é a rede de segurança: se o JavaScript não rodar, nada
+   disso se aplica e o título aparece normal, com a animação antiga de linha.
+   ========================================================================= */
+
+/* a animação antiga, de linha inteira, sai quando o JS assume */
+.js-hero .hero h1 .ln>span{animation:none}
+
+/* ── título, letra por letra ── */
+/* Sem will-change de propósito. Eu tinha posto `will-change:transform,opacity,
+   filter` aqui e o fps do desktop caiu de 60 para 39: will-change promove uma
+   camada de composição por elemento, e são 36 letras — 36 camadas mantidas
+   para sempre por uma animação que dura 1,1 s uma única vez. */
+.hero h1 .lt{display:inline-block}
+/* estado de partida: só quando o JS marcou o bloco como pronto para animar */
+.js-hero .hero h1 [data-pronto] .lt{
+  opacity:0;
+  transform:translateY(.44em) rotate(3deg);
+  filter:blur(5px);
+}
+.js-hero .hero h1 [data-pronto].on .lt{
+  animation:letraSobe .72s cubic-bezier(.16,.9,.24,1) both;
+}
+@keyframes letraSobe{
+  from{opacity:0;transform:translateY(.44em) rotate(3deg);filter:blur(5px)}
+  60% {opacity:1;filter:blur(0)}
+  to  {opacity:1;transform:translateY(0) rotate(0);filter:blur(0)}
+}
+/* o espaço não precisa de blur nem de rotação — só de não colapsar */
+.hero h1 .lt.sp{animation-name:letraEspaco!important}
+@keyframes letraEspaco{from{opacity:0}to{opacity:1}}
+
+/* ── kicker, palavra por palavra ── */
+.hero .kicker .kw{display:inline-block}
+.js-hero .hero .kicker{opacity:1;animation:none}
+.js-hero .hero .kicker [data-pronto] .kw{opacity:0}
+.js-hero .hero .kicker [data-pronto].on .kw{animation:kwEntra .6s var(--ease) both}
+@keyframes kwEntra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.hero .kicker .kd{margin:0 .5em;color:rgba(255,221,51,.5)}
+
+/* ── o botão do CV recebe um brilho que passa devagar ──
+   É o CTA principal. O brilho chama o olho uma vez a cada 7s e some; não é
+   pulsação contínua, que virou sinônimo de anúncio. */
+.hero .btn-y{position:relative;overflow:hidden}
+.hero .btn-y::after{
+  content:"";position:absolute;top:0;left:-140%;width:60%;height:100%;
+  background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.55) 50%,transparent 100%);
+  transform:skewX(-18deg);
+  animation:brilhoCV 7s 2.4s cubic-bezier(.5,0,.5,1) infinite;
+  pointer-events:none;
+}
+@keyframes brilhoCV{
+  0%,74%{left:-140%}
+  92%,100%{left:190%}
+}
+.hero .btn-y:hover::after{animation-play-state:paused}
+
+/* ── quem pediu menos movimento não recebe nada disso ── */
+@media(prefers-reduced-motion:reduce){
+  .js-hero .hero h1 [data-pronto] .lt,
+  .js-hero .hero h1 [data-pronto].on .lt{
+    opacity:1!important;transform:none!important;filter:none!important;animation:none!important}
+  .js-hero .hero .kicker [data-pronto] .kw,
+  .js-hero .hero .kicker [data-pronto].on .kw{
+    opacity:1!important;transform:none!important;animation:none!important}
+  .hero .btn-y::after{display:none}
+}
+
+/* ── indicação de rolagem ──
+   Ocupa o vazio abaixo do CTA e é a única coisa do hero que se move sempre.
+   Uma linha fina com um ponto de luz descendo: chama o olho para baixo sem
+   virar seta pulando, que é o clichê. */
+.rolar{display:inline-flex;flex-direction:column;align-items:center;gap:9px;
+  margin-top:44px;text-decoration:none;padding:6px 14px 4px;border-radius:10px;
+  opacity:0;animation:fade .9s .78s var(--ease) forwards}
+.rolar-txt{font-size:9.5px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;
+  color:rgba(255,255,255,.42);transition:color .25s}
+.rolar-linha{position:relative;display:block;width:1.5px;height:44px;overflow:hidden;
+  background:linear-gradient(to bottom,rgba(255,255,255,.16),rgba(255,255,255,.02))}
+/* transform e não `top`: animar top é propriedade de layout e obriga o
+   navegador a recalcular a cada quadro. transform é composto na GPU. */
+.rolar-linha::after{content:"";position:absolute;left:0;width:100%;height:14px;top:0;
+  background:linear-gradient(to bottom,transparent,var(--yellow));
+  animation:desce 2.3s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes desce{
+  0%{transform:translate3d(0,-14px,0);opacity:0}
+  22%{opacity:1}
+  78%{opacity:1}
+  100%{transform:translate3d(0,44px,0);opacity:0}
+}
+.rolar:hover .rolar-txt{color:var(--yellow)}
+.rolar:hover .rolar-linha{background:linear-gradient(to bottom,rgba(255,221,51,.35),rgba(255,221,51,.04))}
+.rolar:focus-visible{outline:2.5px solid var(--yellow);outline-offset:3px}
+@media(max-width:760px){.rolar{margin-top:30px}.rolar-linha{height:32px}
+  @keyframes desce{0%{transform:translate3d(0,-14px,0);opacity:0}22%{opacity:1}
+    78%{opacity:1}100%{transform:translate3d(0,32px,0);opacity:0}}}
+@media(prefers-reduced-motion:reduce){
+  .rolar{opacity:1;animation:none}
+  .rolar-linha::after{animation:none;transform:translate3d(0,14px,0);opacity:.5}
+}
+
 </style>
 </head>
 <body>
@@ -1135,6 +1237,12 @@ section{scroll-margin-top:112px}
       </a>
       <a class="btn btn-ghost" href="https://github.com/Xigante" target="_blank" rel="noopener">GitHub</a>
     </div>
+    <a class="rolar" href="#skills" aria-label="Rolar para as skills / Scroll to skills">
+      <span class="rolar-txt" aria-hidden="true">
+        <span class="l-pt">role</span><span class="l-en">scroll</span><span class="l-de">scrollen</span><span class="l-it">scorri</span>
+      </span>
+      <span class="rolar-linha" aria-hidden="true"></span>
+    </a>
   </div>
 </header>
 
@@ -2113,6 +2221,9 @@ section{scroll-margin-top:112px}
     setMeta('meta[name="twitter:description"]', 'content', m.d);
     setMeta('meta[property="og:locale"]', 'content', m.loc);
     setMeta('meta[property="og:locale:alternate"]', 'content', m.alt);
+    /* o hero é animado letra por letra: cada idioma tem o seu texto, então a
+       animação precisa ser remontada na troca */
+    if (window.__heroAnim) window.__heroAnim(l);
   }
   /* ═════════════ De onde sai o idioma, em ordem de prioridade ═════════════
      A versão anterior lia só navigator.language e não guardava escolha. Isso
@@ -3207,6 +3318,26 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
      resolução e depois esticada com suavização ligada — o upscale faz o
      borrão de graça. Por quadro sobra um drawImage. Medido: 7,2 → 12,4 fps. */
   var neb = document.createElement('canvas'), nebG = neb.getContext('2d');
+
+  /* ── véu do miolo ───────────────────────────────────────────────────────
+     Apaga o jogo onde fica o texto. Era uma máscara CSS em #naves e custava
+     de 10 a 22 fps, porque máscara sobre canvas que repinta obriga uma passada
+     de composição por quadro. Aqui é um gradiente escuro desenhado UMA vez num
+     canvas de 1/8 da resolução e blitado por cima de tudo: um drawImage. */
+  var veu = document.createElement('canvas'), veuG = veu.getContext('2d');
+  function pintaVeu() {
+    veu.width = Math.max(32, Math.round(W / 8));
+    veu.height = Math.max(24, Math.round(H / 8));
+    var w = veu.width, h = veu.height;
+    veuG.clearRect(0, 0, w, h);
+    var g = veuG.createRadialGradient(w * .5, h * .45, 0, w * .5, h * .45, Math.max(w, h) * .52);
+    g.addColorStop(0, 'rgba(9,10,20,.90)');
+    g.addColorStop(.42, 'rgba(9,10,20,.82)');
+    g.addColorStop(.72, 'rgba(9,10,20,.34)');
+    g.addColorStop(1, 'rgba(9,10,20,0)');
+    veuG.fillStyle = g;
+    veuG.fillRect(0, 0, w, h);
+  }
   function pintaNebulosa() {
     neb.width = Math.max(40, Math.round(W / 7));
     neb.height = Math.max(30, Math.round(H / 7));
@@ -3237,7 +3368,10 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
 
   function dim() {
     var r = cv.getBoundingClientRect();
-    DPR = Math.min(2, window.devicePixelRatio || 1);
+    /* 1.5 e não 2: é pixel art sobre fundo escuro. Em 1920px o clearRect de
+       cada quadro cobria 5,5 milhões de pixels com DPR 2; com 1.5 são 3,1
+       milhões, e a diferença não se vê. */
+    DPR = Math.min(1.5, window.devicePixelRatio || 1);
     W = Math.max(320, r.width); H = Math.max(220, r.height);
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -3246,12 +3380,13 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     /* escala do pixel pela altura: em tela pequena a nave não pode ficar
        gigante nem virar poeira num monitor de 4K */
     ESC = Math.max(.75, Math.min(1.6, H / 620));
-    var novo = Math.max(3, Math.round(4.4 * ESC));
+    var novo = Math.max(3, Math.round(5.2 * ESC));
     if (novo !== PX) {
       PX = novo;
       for (var k in MAPS) SPR[k] = raster(MAPS[k], PX);
     }
     pintaNebulosa();
+    pintaVeu();
 
     /* 11% e não 16%: a coluna de texto tem 960px centrados, e em tela de
        1440 ela começa por volta dos 240px. A nave fica à esquerda dela. */
@@ -3307,7 +3442,7 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
         recarga: 40 + Math.random() * 120
       });
     }
-    ondaEm = 150 + Math.random() * 210;
+    ondaEm = 95 + Math.random() * 130;
   }
 
   /* ── explosão ── */
@@ -3383,7 +3518,7 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
        banda central é a rede de segurança: se a nave estiver na altura do
        texto por qualquer motivo, ela não atira. */
     var noTexto = nave.y > H * 0.26 && nave.y < H * 0.72;
-    if (!nave.morta && relogio % 15 === 0 && !noTexto &&
+    if (!nave.morta && relogio % 12 === 0 && !noTexto &&
         (nave.mirando || Math.random() < 0.18)) {
       tiros.push({ x: nave.x + 18 * ESC, y: nave.y, v: 7.6 * ESC });
     }
@@ -3393,7 +3528,7 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     }
 
     /* inimigos */
-    if (--ondaEm <= 0 && inimigos.length < 9) onda();
+    if (--ondaEm <= 0 && inimigos.length < 11) onda();
     for (i = inimigos.length - 1; i >= 0; i--) {
       var m = inimigos[i];
       if (m.t > 0) { m.t--; continue; }
@@ -3457,15 +3592,18 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
   }
 
   function pinta() {
-    ctx.clearRect(0, 0, W, H);
-
-    /* nebulosa: um drawImage, com deriva lenta em seno. A suavização precisa
-       ficar ligada só aqui — a pixel art depende de estar desligada. */
+    /* A nebulosa é desenhada com composite 'copy': isso APAGA o canvas e pinta
+       no mesmo passe, poupando um clearRect de tela cheia por quadro. Em
+       1920×713 com DPR 1.5 são 3,1 milhões de pixels que não são varridos duas
+       vezes. A suavização fica ligada só aqui — a pixel art depende de estar
+       desligada. */
     ctx.imageSmoothingEnabled = true;
+    ctx.globalCompositeOperation = 'copy';
     ctx.globalAlpha = .62;
     var dx = Math.sin(relogio * 0.00055) * W * 0.035;
     var dy = Math.cos(relogio * 0.00042) * H * 0.05;
     ctx.drawImage(neb, -W * 0.07 + dx, -H * 0.1 + dy, W * 1.14, H * 1.2);
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     ctx.imageSmoothingEnabled = false;
 
@@ -3532,6 +3670,11 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
       ctx.fillRect(f.x - f.r / 2, f.y - f.r / 2, f.r, f.r);
     }
     ctx.globalAlpha = 1;
+
+    /* véu por último: apaga o que passou pela faixa do texto */
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(veu, 0, 0, W, H);
+    ctx.imageSmoothingEnabled = false;
   }
 
   /* ═══════════════════════ LOOP DE PASSO FIXO ═══════════════════════
@@ -3560,9 +3703,15 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     raf = 0;
   }
 
-  /* ── um quadro parado para quem pediu menos movimento ── */
+  /* ── um quadro parado para quem pediu menos movimento ──
+     Quem tem "reduzir movimento" ligado no sistema vê ISTO e nada mais: uma
+     cena montada, com inimigos em tela e tiros no ar, em vez de um instante
+     qualquer. É a razão pela qual alguém pode achar que o fundo é estático —
+     não é bug, é a preferência do sistema sendo respeitada. */
   function estatico() {
     for (var i = 0; i < 240; i++) passo();
+    /* garante presença: se a rodada não deixou ninguém na tela, força uma onda */
+    if (inimigos.length < 3) { onda(); for (i = 0; i < 60; i++) passo(); }
     pinta();
   }
 
@@ -3599,6 +3748,136 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
 
   dim();
   if (RM) estatico(); else liga();
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO ANIMADO — a tipografia
+
+   O fundo já se move (o shooter). O texto estava parado, e é isso que fazia a
+   tela inicial parecer estática mesmo com o jogo atrás.
+
+   Três coisas, e nenhuma delas grita:
+     1. o título entra letra por letra, com atraso escalonado
+     2. o kicker entra palavra por palavra
+     3. o botão amarelo do CV recebe um brilho lento que passa de vez em quando
+
+   O que eu NÃO fiz, de propósito: gradiente animado no texto e palavra
+   girando no título. O primeiro derruba contraste (e este site é auditado em
+   WCAG AA); o segundo mudaria a mensagem dele sem ele pedir.
+
+   Acessibilidade: quebrar o título em letras faz leitor de tela ler L-E-T-R-A
+   por letra. Por isso o h1 recebe aria-label com a frase inteira e as letras
+   ficam aria-hidden. O aria-label é reescrito a cada troca de idioma.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function heroAnim() {
+  'use strict';
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var h1 = document.querySelector('.hero h1.display');
+  var kicker = document.querySelector('.hero .kicker');
+  if (!h1) return;
+
+  /* Quebra o texto de UMA linha em spans de letra. O espaço sai como span
+     próprio com &nbsp; — sem isso o navegador colapsa o espaço entre spans
+     inline e as palavras colam. */
+  function letras(el, base) {
+    var txt = el.textContent;
+    var frag = document.createDocumentFragment();
+    var i, n = 0;
+    for (i = 0; i < txt.length; i++) {
+      var ch = txt[i];
+      var s = document.createElement('span');
+      s.className = 'lt';
+      if (ch === ' ') {
+        s.innerHTML = '&nbsp;';
+        s.classList.add('sp');
+      } else {
+        s.textContent = ch;
+      }
+      /* atraso por letra: 26ms acumula rápido demais em frase longa, então
+         cresce com raiz — mantém o efeito sem esticar a entrada */
+      s.style.animationDelay = (base + Math.sqrt(n) * 34) + 'ms';
+      frag.appendChild(s);
+      n++;
+    }
+    el.textContent = '';
+    el.appendChild(frag);
+    return n;
+  }
+
+  function frase(span) {
+    return (span ? span.textContent : '').replace(/\s+/g, ' ').trim();
+  }
+
+  /* Monta a animação do idioma ativo. Chamado no carregamento e a cada troca:
+     cada idioma tem seu próprio bloco de texto, e o que já foi quebrado em
+     letras não pode ser quebrado de novo (viraria span por span). */
+  function prepara(l) {
+    var alvo = h1.querySelector('.l-' + l);
+    if (!alvo) return;
+
+    /* aria-label com a frase inteira, antes de picar em letras */
+    h1.setAttribute('aria-label', frase(alvo));
+
+    if (!alvo.dataset.pronto) {
+      var linhas = [].slice.call(alvo.querySelectorAll('.ln > span'));
+      var acc = 0;
+      linhas.forEach(function (ln, idx) {
+        ln.setAttribute('aria-hidden', 'true');
+        acc += letras(ln, 120 + idx * 130);
+      });
+      alvo.dataset.pronto = '1';
+    }
+
+    /* reinicia a animação: remove a classe, força reflow, devolve. Sem o
+       reflow o navegador agrupa as duas mudanças e nada reanima. */
+    alvo.classList.remove('on');
+    void alvo.offsetWidth;
+    alvo.classList.add('on');
+  }
+
+  function preparaKicker(l) {
+    if (!kicker) return;
+    var alvo = kicker.querySelector('.l-' + l);
+    if (!alvo) return;
+    if (!alvo.dataset.pronto) {
+      var partes = alvo.textContent.split('·');
+      alvo.textContent = '';
+      partes.forEach(function (p, i) {
+        var s = document.createElement('span');
+        s.className = 'kw';
+        s.textContent = p.trim();
+        s.style.animationDelay = (240 + i * 90) + 'ms';
+        alvo.appendChild(s);
+        if (i < partes.length - 1) {
+          var d = document.createElement('span');
+          d.className = 'kw kd';
+          d.textContent = '·';
+          d.setAttribute('aria-hidden', 'true');
+          d.style.animationDelay = (240 + i * 90 + 45) + 'ms';
+          alvo.appendChild(d);
+        }
+      });
+      alvo.dataset.pronto = '1';
+    }
+    alvo.classList.remove('on');
+    void alvo.offsetWidth;
+    alvo.classList.add('on');
+  }
+
+  window.__heroAnim = function (l) {
+    if (RM) {                      /* sem movimento: só o rótulo de leitor de tela */
+      var a = h1.querySelector('.l-' + l);
+      if (a) h1.setAttribute('aria-label', frase(a));
+      return;
+    }
+    prepara(l);
+    preparaKicker(l);
+  };
+
+  /* marca o documento para o CSS saber que o JS assumiu a animação. Sem isso,
+     quem tiver JS desligado veria o título invisível para sempre. */
+  document.documentElement.classList.add('js-hero');
+  window.__heroAnim(document.documentElement.dataset.lang || 'pt');
 })();
 
 </script>

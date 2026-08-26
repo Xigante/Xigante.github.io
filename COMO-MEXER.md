@@ -722,3 +722,74 @@ por `transform`, que é composto na GPU e não repinta.
 **Resultado: 7,7 → 60 fps na página inteira**, com o jogo rodando. Se você for acrescentar efeito
 de fundo, meça antes e depois — `filter:blur` grande e animação de `background-position` são as
 duas armadilhas que estavam aqui.
+
+---
+
+# A tela inicial animada
+
+O fundo (o shooter) já se movia; o texto ficava parado, e era isso que fazia a tela inicial
+parecer estática. Quatro coisas se movem agora, todas em `page_hero.html` e `page_css3.css`:
+
+| O que | Onde mexer |
+|---|---|
+| Título, letra por letra | `letras()` em `page_hero.html`; a curva em `@keyframes letraSobe` |
+| Kicker, palavra por palavra | `preparaKicker()`; `@keyframes kwEntra` |
+| Brilho no botão do CV | `@keyframes brilhoCV`, uma passada a cada 7 s |
+| Indicação de rolagem | `.rolar` e `@keyframes desce` |
+
+## O atraso por letra usa raiz, não multiplicação
+
+```js
+s.style.animationDelay = (base + Math.sqrt(n) * 34) + 'ms';
+```
+
+Com `n * 26` a frase longa vira uma entrada de três segundos: cada letra soma o mesmo, e o título
+tem 44 letras em alemão. Com raiz o começo é rápido e o fim desacelera — a onda inteira fecha em
+1,1 s independente do idioma.
+
+## O título é remontado a cada troca de idioma
+
+Cada idioma tem o seu bloco de texto, então `window.__heroAnim(l)` é chamado de dentro do
+`setLang`. O bloco já quebrado em letras traz `data-pronto="1"` e não é quebrado de novo — sem essa
+marca, trocar de idioma duas vezes viraria span dentro de span.
+
+## Leitor de tela
+
+Quebrar em letras faz leitor de tela ler L-E-T-R-A por letra. Por isso o `h1` recebe `aria-label`
+com a frase inteira e as linhas ficam `aria-hidden`. **O `aria-label` é reescrito em cada troca de
+idioma** — se você mexer no `setLang`, não perca essa chamada.
+
+## Duas armadilhas de performance que eu caí e medi
+
+**`will-change` em 36 spans.** Eu tinha posto `will-change:transform,opacity,filter` nas letras. O
+fps do desktop caiu de 60 para 39: `will-change` promove uma camada de composição por elemento, e
+são 36 letras — 36 camadas mantidas para sempre por uma animação que roda 1,1 s uma vez. Removido.
+
+**A máscara CSS no canvas do shooter.** Era o custo real, e era grande:
+
+| Viewport | Com máscara | Sem |
+|---|---|---|
+| 1440×800 | 51,6 fps | 61,2 |
+| 1400×860 | 38,5 fps | 61,3 |
+| 1920×1080 | 28,9 fps | 42,1 |
+
+Máscara CSS sobre um canvas que repinta a cada quadro força uma passada de composição por quadro, e
+o custo escala com a área. O mesmo efeito agora é feito dentro do canvas: um véu escuro
+pré-renderizado em 1/8 da resolução, blitado com um `drawImage`. Ver `veu` e `pintaVeu()` em
+`page_naves.html`.
+
+Mais duas economias no mesmo arquivo: **DPR travado em 1,5** em vez de 2 (é pixel art sobre fundo
+escuro, ninguém nota, e corta 44% dos pixels), e a nebulosa desenhada com
+`globalCompositeOperation = 'copy'`, que apaga e pinta no mesmo passe e poupa um `clearRect` de tela
+cheia por quadro.
+
+**Regra geral:** se for acrescentar efeito no hero, meça antes e depois. `filter:blur` grande,
+`mask-image` sobre canvas animado, `will-change` em muitos elementos e animação de propriedade de
+layout (`top`, `left`, `background-position`) são as quatro armadilhas que já apareceram aqui.
+
+## Se o fundo parecer parado
+
+Não é bug: é `prefers-reduced-motion`. Com "reduzir movimento" ligado no sistema — no Windows em
+Configurações → Acessibilidade → Efeitos visuais → Efeitos de animação — o shooter desenha **um
+quadro só** e não liga o loop, e o título aparece sem a entrada letra por letra. É a preferência
+sendo respeitada, e é para continuar assim.
