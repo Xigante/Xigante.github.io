@@ -570,3 +570,78 @@ estado exato de antes, sempre.
 ---
 
 *Última atualização: 16 de agosto de 2026.*
+
+---
+
+# Triangulação de contato — o projeto 08
+
+Este é o único projeto do portfólio que tem **repositório próprio e demo no ar**. Ele vive em
+dois lugares e os dois precisam ser atualizados juntos.
+
+## Os dois lugares
+
+| Onde | O que serve | Como atualizar |
+|---|---|---|
+| `github.com/Xigante/triangulacao-c2c` | o código, os testes, a especificação, e o demo em `demo.html` | commit direto no repo |
+| `xigante.github.io/demos/triangulacao-c2c.html` | uma cópia do mesmo demo, servida do portfólio | subir o arquivo em `demos/` |
+
+A cópia existe porque o card do portfólio deve ter demo clicável mesmo que o outro repositório
+saia do ar. **Se você mexer no demo, atualize as duas cópias** — senão o portfólio mostra uma
+versão velha e o repo outra.
+
+O link do card aponta para a versão do repositório (`xigante.github.io/triangulacao-c2c/demo.html`),
+não para a cópia local. Isso é de propósito: quem clica cai no lugar onde também está o código.
+
+## Como o demo é gerado
+
+No repositório `triangulacao-c2c`:
+
+```
+gerar_dados.py    a base sintética de 22 pessoas fictícias
+score.py          o motor: os cinco eixos
+testes.py         38 testes — rode ANTES de publicar
+build_demo.py     junta os dois e escreve demo.html
+```
+
+```bash
+python3 testes.py      # tem que dar "✓ 38 testes passaram"
+python3 build_demo.py  # reescreve demo.html
+```
+
+**Nunca edite `demo.html` à mão.** Ele é gerado. Toda edição manual se perde no próximo build.
+
+### Mexer no ranking
+
+Os pesos estão no topo do `score.py`, em `TETO`. Se mudar um peso, a normalização acompanha
+sozinha (o total é dividido por `TETO_TOTAL`), mas **rode os testes**: vários deles fixam números
+exatos e vão falhar de propósito, para você conferir se a mudança é a que queria.
+
+Os vocabulários (`CORPORATIVO`, `NEGOCIO`, `SENIORIDADE`) são listas de termos. Acrescentar termo é
+seguro. **Mudar a ordem de `SENIORIDADE` não é** — é escada de primeira-regra-que-casa, e trocar a
+ordem reclassifica gente em silêncio.
+
+### Mexer nas pessoas do demo
+
+`gerar_dados.py` tem um comentário no topo com o checklist de cobertura: cada caminho da árvore de
+decisão precisa de pelo menos uma pessoa que caia nele. Se você tirar alguém, confira o checklist —
+o valor do demo é provar o motor inteiro, não desenhar cartões bonitos.
+
+## A regra que não se negocia
+
+**Nenhum dado real vai para nenhuma das duas cópias.** Nem nome de executivo, nem nome de colega,
+nem número de projeto, nem nome de cliente, nem link de LinkedIn de terceiro, nem link de HubSpot.
+
+O sistema real roda sobre base de candidatos com pessoas físicas identificadas. Publicar isso é
+violação de LGPD com dano direto a terceiros — a pessoa descobre pelo Google que está na shortlist
+de um concorrente.
+
+Existe um script de barreira (`verificar.py`, fora do repositório) que varre os arquivos públicos
+contra a lista de nomes reais e falha se achar qualquer um. Ele fica fora do repo porque carrega
+justamente a lista que não pode ser publicada. Se você for republicar o demo com dados novos,
+rode-o antes.
+
+## Se precisar tirar a especificação do ar
+
+A especificação completa do score, com pesos e limiares, está num arquivo só: `METODO.md`. Foi
+deixada isolada de propósito. Apagar é um commit de um arquivo, e só o `README.md` e o `demo.html`
+citam o nome dele — os dois em links, que viram 404 e não quebram nada.
