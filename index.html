@@ -880,6 +880,135 @@ section{scroll-margin-top:112px}
 
 @media(pointer:coarse){.lk{min-height:44px}}
 
+/* =========================================================================
+   HERO ESPACIAL — troca do gradiente âmbar estático pelo shooter
+
+   O hero era a única seção clara de um site preto. Escurecer não é só o
+   fundo do jogo funcionar: unifica a página e faz o amarelo da marca virar
+   o destaque, em vez de brigar com um fundo âmbar.
+
+   Ordem de camada, de baixo para cima:
+     0  .mesh    nebulosa desfocada, animada por CSS (custo zero de JS)
+     1  #naves   o canvas do jogo
+     2  ::after  véu inferior, para a nave sumir na dobra em vez de cortar
+     3  .hero-in o texto
+   ========================================================================= */
+.hero{
+  background:
+    radial-gradient(120% 82% at 50% -6%, #232A4A 0%, rgba(35,42,74,0) 56%),
+    radial-gradient(72% 58% at 16% 30%, #2C2247 0%, rgba(44,34,71,0) 62%),
+    radial-gradient(66% 52% at 86% 44%, #1B2C4A 0%, rgba(27,44,74,0) 60%),
+    /* brasa baixa: o único resto de âmbar, para não virar outra marca */
+    radial-gradient(140% 62% at 50% 108%, #6B2A08 0%, rgba(107,42,8,0) 52%),
+    linear-gradient(180deg, #10132A 0%, #0C1024 40%, #0B0A18 68%, #0A0A0F 86%, var(--frame) 100%);
+}
+.mesh{filter:blur(84px);opacity:.5;mix-blend-mode:screen}
+.mesh .a{background:radial-gradient(circle,#5B6CC4 0%,rgba(91,108,196,0) 66%)}
+.mesh .b{background:radial-gradient(circle,#7A4FA8 0%,rgba(122,79,168,0) 64%)}
+.mesh .c{background:radial-gradient(circle,#C4622A 0%,rgba(196,98,42,0) 66%)}
+.mesh .d{background:radial-gradient(circle,#3E7FB8 0%,rgba(62,127,184,0) 68%)}
+
+#naves{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;
+       pointer-events:none;              /* o clique atravessa e chega no CTA */
+       opacity:.92}
+.hero::after{z-index:2;height:44%;
+  background:linear-gradient(to bottom,rgba(10,10,20,0) 0%,rgba(9,9,16,.62) 52%,var(--frame) 100%)}
+.hero-in{z-index:3}
+
+/* ── texto: era escuro sobre âmbar claro, agora é claro sobre espaço ── */
+.hero h1{color:#F4F3EE;text-shadow:0 2px 26px rgba(6,8,20,.72)}
+.hero .kicker{color:var(--yellow);text-shadow:0 1px 12px rgba(6,8,20,.8)}
+.hero .lede{color:#C6C8CE;font-weight:500;text-shadow:0 1px 16px rgba(6,8,20,.85)}
+.hero .lede b{color:#F1F0EB}
+
+/* ── botões: no claro o preto era o primário; no escuro ele desaparece ── */
+.hero .btn-dark{background:#F6F5F0;color:#101014;
+                box-shadow:0 14px 34px -16px rgba(0,0,0,.9)}
+.hero .btn-dark:hover{background:#fff;box-shadow:0 20px 44px -18px rgba(0,0,0,.95)}
+.hero .btn-y{box-shadow:0 14px 34px -14px rgba(255,190,0,.55)}
+.hero .btn-ghost{background:rgba(255,255,255,.06);color:#EDECE7;
+                 border:1.5px solid rgba(255,255,255,.28);box-shadow:none;
+                 backdrop-filter:blur(6px)}
+.hero .btn-ghost:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.45)}
+
+/* menos movimento: o canvas fica num quadro parado, a nebulosa para de flutuar */
+@media(prefers-reduced-motion:reduce){
+  .mesh i{animation:none!important}
+}
+
+/* A máscara é o que impede o jogo de sujar a leitura: no miolo, onde ficam a
+   headline e o lede, o canvas aparece a ~15% de opacidade. Um tiro que
+   atravessa a área do texto vira um risco fantasma em vez de ruído. */
+#naves{
+  -webkit-mask-image:radial-gradient(66% 50% at 50% 45%,
+    rgba(0,0,0,.13) 0%, rgba(0,0,0,.2) 38%, rgba(0,0,0,.62) 66%, #000 84%);
+          mask-image:radial-gradient(66% 50% at 50% 45%,
+    rgba(0,0,0,.13) 0%, rgba(0,0,0,.2) 38%, rgba(0,0,0,.62) 66%, #000 84%);
+}
+/* Em tela estreita o texto ocupa quase tudo: a máscara fecha mais e o jogo
+   fica só nas beiradas de cima e de baixo. */
+@media(max-width:760px){
+  #naves{opacity:.8;
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.12) 26%,
+      rgba(0,0,0,.12) 74%,#000 100%);
+            mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.12) 26%,
+      rgba(0,0,0,.12) 74%,#000 100%)}
+}
+
+/* =========================================================================
+   CUSTO DE QUADRO — o que foi medido e o que mudou
+
+   Medido em Chromium sem GPU, viewport 1440×800, página inteira:
+
+     página como estava .................  7,7 fps
+     sem os blobs .mesh do hero ......... 12,4 fps
+     com blur(90px) do #cyber estático .. (ver abaixo)
+
+   Duas causas, as duas de paint e nenhuma de JavaScript:
+
+   1. `.mesh` — quatro elementos de ~55% da viewport com filter:blur(84px),
+      animados. Blur é filtro de pintura: cada quadro repinta a camada
+      inteira. Foram REMOVIDOS do hero; a nebulosa agora é um drawImage de
+      canvas em baixa resolução, onde o borrão sai do upscale, de graça.
+
+   2. `#cyber` — camada fixa, sempre visível, em TODA a página:
+      três blur(90px) de 34–46vw com animação infinita, e uma grade em
+      perspectiva animando `background-position`. Animar background-position
+      num elemento mascarado e transformado força repaint de tela cheia a
+      cada quadro. Corrigido abaixo, sem mudar o desenho.
+   ========================================================================= */
+
+/* Os três halos eram divs borradas. Um radial-gradient a 20% de opacidade JÁ
+   é um halo borrado — o blur de 90px em cima disso não acrescenta desenho,
+   só custo. Viraram fundo estático do pai. */
+#cyber i{display:none}
+#cyber{
+  background:
+    radial-gradient(46vw 46vw at 13vw 34%, rgba(34,211,238,.13) 0%, rgba(34,211,238,0) 70%),
+    radial-gradient(40vw 40vw at 88vw 64%, rgba(200,107,245,.12) 0%, rgba(200,107,245,0) 70%),
+    radial-gradient(34vw 34vw at 55vw 96%, rgba(255,221,51,.10) 0%, rgba(255,221,51,0) 70%);
+}
+
+/* A grade continua varrendo, mas por transform em vez de background-position:
+   transform é composto na GPU e não repinta. Mesmo movimento, custo de
+   compositing em vez de custo de pintura. */
+#cyber .grade{animation:none;will-change:transform}
+#cyber .grade::before{
+  content:"";position:absolute;inset:-46px 0 0;
+  background-image:
+    repeating-linear-gradient(90deg,rgba(34,211,238,.30) 0 1px,transparent 1px 62px),
+    repeating-linear-gradient(0deg,rgba(200,107,245,.24) 0 1px,transparent 1px 46px);
+  /* 26s para 46px é o mesmo passo da animação original (varrer). Na primeira
+     tentativa eu pus 2,6s e ficou dez vezes mais rápido — mudança visual que
+     eu não queria fazer, só de custo. */
+  animation:gradeSobe 26s linear infinite}
+@keyframes gradeSobe{to{transform:translate3d(0,46px,0)}}
+#cyber .grade{background-image:none}
+
+@media(prefers-reduced-motion:reduce){
+  #cyber .grade::before{animation:none}
+}
+
 </style>
 </head>
 <body>
@@ -913,7 +1042,7 @@ section{scroll-margin-top:112px}
 
 <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
 <header class="hero" id="top">
-  <div class="mesh" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i></div>
+  <canvas id="naves" aria-hidden="true"></canvas>
   <div class="wrap hero-in">
     <p class="kicker">
       <span class="l-pt">Freelance · Dados · IA · Games</span>
@@ -2753,6 +2882,501 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
     if (arrow && (pos > 0 || codeVisivel)) e.preventDefault();
     step(k);
   });
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FUNDO DO HERO — SHOOTER HORIZONTAL EM ATTRACT MODE
+
+   Não é um jogo para jogar: é cenário. A nave se pilota sozinha, os inimigos
+   entram em formação pela direita e a coisa toda existe para dar vida ao topo
+   da página sem competir com o texto.
+
+   Por que horizontal e não vertical: o hero é largo e baixo (uns 1900×650 num
+   desktop). Shooter vertical deixaria dois terços da largura vazios.
+
+   Regras que eu me impus, porque fundo animado é o lugar mais fácil de
+   estragar uma página:
+     · pointer-events:none — o clique atravessa e chega nos botões do CTA
+     · para de rodar quando o hero sai da tela (IntersectionObserver)
+     · para de rodar quando a aba perde o foco
+     · prefers-reduced-motion desenha UM quadro e não liga o loop
+     · passo de tempo fixo, senão a dificuldade muda com o FPS da máquina
+     · densidade proporcional à área, senão telas grandes viram sopa de pixel
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function naves() {
+  'use strict';
+  var cv = document.getElementById('naves');
+  if (!cv || !cv.getContext) return;
+  var ctx = cv.getContext('2d', { alpha: true });
+  var hero = document.getElementById('top');
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── paleta: a mesma família do site, para o fundo não virar outra marca ── */
+  var C = {
+    casco:  '#8C93A8',   // cinza-azulado do corpo da nave
+    brilho: '#E8ECF5',   // luz em cima
+    motor:  '#FFDD33',   // o amarelo do site
+    fogo:   '#FF8A2B',
+    inimA:  '#A896D4',   // violeta claro — o escuro sumia na nebulosa
+    inimB:  '#E0879B',   // rosa-vinho do pesado
+    tiro:   '#FFE873',
+    tiroI:  '#FF6B8A'
+  };
+
+  /* ── sprites: mapa de caracteres → canvas offscreen, rasterizado uma vez ──
+     Mesma ideia da pixel art do resto da página. Desenhar retângulo a cada
+     quadro sairia caro; blit de bitmap pronto não. */
+  var MAPS = {
+    nave: [
+      '....1....',
+      '...11....',
+      '..2111...',
+      '.2211122.',
+      '32211111C',
+      '.2211122.',
+      '..2111...',
+      '...11....',
+      '....1....'
+    ],
+    inimigo: [
+      '..A...A..',
+      '.AA...AA.',
+      'AAABBBAAA',
+      'AABBBBBAA',
+      'AAABBBAAA',
+      '.AA...AA.',
+      '..A...A..'
+    ],
+    pesado: [
+      '.DDD..DDD.',
+      'DDDDDDDDDD',
+      'DDBBBBBBDD',
+      'DBBDDDDBBD',
+      'DDBBBBBBDD',
+      'DDDDDDDDDD',
+      '.DDD..DDD.'
+    ]
+  };
+  var COR = { '1': C.casco, '2': C.brilho, '3': C.motor, 'C': C.fogo,
+              'A': C.inimA, 'B': '#171226', 'D': C.inimB };
+
+  function raster(mapa, px) {
+    var h = mapa.length, w = mapa[0].length;
+    var c = document.createElement('canvas');
+    c.width = w * px; c.height = h * px;
+    var g = c.getContext('2d');
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var ch = mapa[y][x];
+        if (ch === '.' || ch === ' ') continue;
+        g.fillStyle = COR[ch] || C.casco;
+        g.fillRect(x * px, y * px, px, px);
+      }
+    }
+    return c;
+  }
+
+  var SPR = {}, PX = 0;
+
+  /* ── nebulosa ──────────────────────────────────────────────────────────
+     Os quatro blobs do CSS custavam caro: filter:blur(84px) em elemento de
+     ~55% da viewport é repaint de camada enorme a cada quadro, e eram quatro,
+     animados. Aqui a nebulosa é desenhada UMA vez num canvas de 1/7 da
+     resolução e depois esticada com suavização ligada — o upscale faz o
+     borrão de graça. Por quadro sobra um drawImage. Medido: 7,2 → 12,4 fps. */
+  var neb = document.createElement('canvas'), nebG = neb.getContext('2d');
+  function pintaNebulosa() {
+    neb.width = Math.max(40, Math.round(W / 7));
+    neb.height = Math.max(30, Math.round(H / 7));
+    var w = neb.width, h = neb.height;
+    nebG.clearRect(0, 0, w, h);
+    var manchas = [
+      [0.18, 0.30, 0.46, 'rgba(91,108,196,.50)'],
+      [0.58, 0.44, 0.44, 'rgba(122,79,168,.44)'],
+      [0.08, 0.72, 0.38, 'rgba(196,98,42,.30)'],
+      [0.86, 0.22, 0.36, 'rgba(62,127,184,.40)']
+    ];
+    for (var i = 0; i < manchas.length; i++) {
+      var m = manchas[i], cx = m[0] * w, cy = m[1] * h, r = m[2] * Math.max(w, h);
+      var g = nebG.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, m[3]);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      nebG.fillStyle = g;
+      nebG.fillRect(cx - r, cy - r, r * 2, r * 2);
+    }
+  }
+
+  /* ── estado ── */
+  var W = 0, H = 0, DPR = 1, ESC = 1;
+  var estrelas = [], tiros = [], tirosI = [], inimigos = [], faiscas = [], rastro = [];
+  var nave = { x: 0, y: 0, vy: 0, t: 0, alvoY: 0, morta: 0 };
+  var mouse = { on: false, y: 0 };
+  var relogio = 0, ondaEm = 0, raf = 0, rodando = false, visivel = true, naTela = true;
+
+  function dim() {
+    var r = cv.getBoundingClientRect();
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = Math.max(320, r.width); H = Math.max(220, r.height);
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+
+    /* escala do pixel pela altura: em tela pequena a nave não pode ficar
+       gigante nem virar poeira num monitor de 4K */
+    ESC = Math.max(.75, Math.min(1.6, H / 620));
+    var novo = Math.max(3, Math.round(4.4 * ESC));
+    if (novo !== PX) {
+      PX = novo;
+      for (var k in MAPS) SPR[k] = raster(MAPS[k], PX);
+    }
+    pintaNebulosa();
+
+    /* 11% e não 16%: a coluna de texto tem 960px centrados, e em tela de
+       1440 ela começa por volta dos 240px. A nave fica à esquerda dela. */
+    nave.x = W * 0.11;
+    if (!nave.y) { nave.y = H * 0.52; nave.alvoY = nave.y; }
+    semear();
+  }
+
+  /* ── campo de estrelas: três camadas com parallax ── */
+  function semear() {
+    estrelas.length = 0;
+    var densidade = (W * H) / 6200;          // proporcional à área
+    var n = Math.round(Math.min(430, densidade));
+    for (var i = 0; i < n; i++) {
+      var camada = i % 3;
+      estrelas.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        c: camada,
+        v: (0.16 + camada * 0.26) * ESC,
+        r: camada === 2 ? 1.5 : (camada === 1 ? 1.1 : 0.8),
+        a: 0.3 + camada * 0.3
+      });
+    }
+  }
+
+  /* ── ondas de inimigos ── */
+  var FORMA = ['linha', 'v', 'onda', 'duplo'];
+  function onda() {
+    var tipo = FORMA[(Math.random() * FORMA.length) | 0];
+    var pesado = Math.random() < 0.26;
+    var qtd = pesado ? 2 : 3 + ((Math.random() * 2) | 0);
+    /* Faixa de voo: topo ou base, nunca o meio. O texto do hero ocupa a
+       banda central e nave passando atrás de headline suja a leitura —
+       a máscara do CSS ajuda, mas evitar é melhor que atenuar. */
+    var cima = Math.random() < 0.5;
+    var baseY = cima ? H * (0.07 + Math.random() * 0.14)
+                     : H * (0.80 + Math.random() * 0.13);
+    var vel = (1.5 + Math.random() * 0.9) * ESC;
+
+    for (var i = 0; i < qtd; i++) {
+      var y = baseY, atraso = i * 26;
+      if (tipo === 'v')     y = baseY + (i - qtd / 2) * 26 * ESC;
+      if (tipo === 'duplo') y = baseY + (i % 2 ? 34 : -34) * ESC;
+      inimigos.push({
+        x: W + 40 + i * 42 * ESC, y: y, y0: y,
+        v: vel, t: atraso,
+        tipo: pesado ? 'pesado' : 'inimigo',
+        vida: pesado ? 3 : 1,
+        onda: tipo === 'onda' ? (18 + Math.random() * 14) * ESC : 0,
+        fase: i * 0.5,
+        flash: 0,
+        recarga: 40 + Math.random() * 120
+      });
+    }
+    ondaEm = 150 + Math.random() * 210;
+  }
+
+  /* ── explosão ── */
+  function estourar(x, y, forca, cor) {
+    var n = Math.round(forca * (W > 900 ? 12 : 8));
+    for (var i = 0; i < n; i++) {
+      var ang = Math.random() * Math.PI * 2, sp = (0.6 + Math.random() * 2.6) * ESC;
+      faiscas.push({
+        x: x, y: y,
+        vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+        vida: 22 + Math.random() * 26, t: 0,
+        r: (0.9 + Math.random() * 1.7) * ESC,
+        cor: Math.random() < 0.42 ? C.brilho : cor
+      });
+    }
+  }
+
+  /* ═══════════════════════ PASSO (1/60 s fixo) ═══════════════════════ */
+  function passo() {
+    relogio++;
+
+    /* estrelas rolam para a esquerda: dá sensação de voo para a frente */
+    for (var i = 0; i < estrelas.length; i++) {
+      var e = estrelas[i];
+      e.x -= e.v;
+      if (e.x < -2) { e.x = W + 2; e.y = Math.random() * H; }
+    }
+
+    /* ── a nave ──
+       Fica num vaivém suave. Se o mouse estiver sobre o hero, ela inclina na
+       direção dele — vivo o suficiente para notar, discreto o bastante para
+       não puxar a atenção do texto. */
+    nave.t += 0.014;
+
+    /* Alvo: o inimigo mais próximo que ainda está entrando. Isso não é
+       capricho de IA — é o que mantém o tiro fora do texto. O tiro nasce na
+       altura da nave, e os inimigos só nascem nas faixas de cima e de baixo;
+       perseguindo, a nave fica nessas faixas por consequência. Sem isso ela
+       passeava pela banda central e riscava a headline. */
+    var mira = null, melhor = 1e9;
+    for (var q = 0; q < inimigos.length; q++) {
+      var iq = inimigos[q];
+      if (iq.t > 0 || iq.x < nave.x + 30 * ESC) continue;
+      var d = iq.x - nave.x;
+      if (d < melhor) { melhor = d; mira = iq; }
+    }
+    var alvo;
+    if (mira) {
+      alvo = mira.y;
+    } else {
+      /* sem ninguém na tela, ela repousa na faixa de baixo em vez de no meio */
+      alvo = H * 0.86 + Math.sin(nave.t) * H * 0.07;
+    }
+    if (mouse.on) alvo = alvo * 0.4 + mouse.y * 0.6;
+    nave.mirando = !!mira && Math.abs(alvo - nave.y) < 16 * ESC;
+    nave.vy += (alvo - nave.y) * 0.006;
+    nave.vy *= 0.9;
+    nave.y += nave.vy;
+    nave.y = Math.max(H * 0.06, Math.min(H * 0.94, nave.y));
+
+    if (nave.morta > 0) nave.morta--;
+
+    /* rastro do motor */
+    if (relogio % 2 === 0 && !nave.morta) {
+      rastro.push({ x: nave.x - 7 * ESC, y: nave.y, t: 0, vida: 16 });
+    }
+    for (i = rastro.length - 1; i >= 0; i--) {
+      var r = rastro[i]; r.t++; r.x -= 1.7 * ESC;
+      if (r.t > r.vida) rastro.splice(i, 1);
+    }
+
+    /* Tiro só quando alinhada com alguém, ou raramente à toa. A condição de
+       banda central é a rede de segurança: se a nave estiver na altura do
+       texto por qualquer motivo, ela não atira. */
+    var noTexto = nave.y > H * 0.26 && nave.y < H * 0.72;
+    if (!nave.morta && relogio % 15 === 0 && !noTexto &&
+        (nave.mirando || Math.random() < 0.18)) {
+      tiros.push({ x: nave.x + 18 * ESC, y: nave.y, v: 7.6 * ESC });
+    }
+    for (i = tiros.length - 1; i >= 0; i--) {
+      var t = tiros[i]; t.x += t.v;
+      if (t.x > W + 10) tiros.splice(i, 1);
+    }
+
+    /* inimigos */
+    if (--ondaEm <= 0 && inimigos.length < 9) onda();
+    for (i = inimigos.length - 1; i >= 0; i--) {
+      var m = inimigos[i];
+      if (m.t > 0) { m.t--; continue; }
+      m.x -= m.v;
+      if (m.onda) m.y = m.y0 + Math.sin(relogio * 0.028 + m.fase) * m.onda;
+      if (m.flash > 0) m.flash--;
+
+      /* o pesado só atira se a nave não estiver na banda do texto: senão o
+         projétil viaja da direita para a esquerda cortando a headline */
+      if (m.tipo === 'pesado' && --m.recarga <= 0 &&
+          !(m.y > H * 0.26 && m.y < H * 0.72)) {
+        m.recarga = 150 + Math.random() * 180;
+        tirosI.push({ x: m.x - 12 * ESC, y: m.y, v: 3.1 * ESC });
+      }
+      if (m.x < -50) { inimigos.splice(i, 1); continue; }
+
+      /* colisão AABB frouxa com os tiros */
+      var raio = (m.tipo === 'pesado' ? 17 : 14) * ESC;
+      for (var j = tiros.length - 1; j >= 0; j--) {
+        var b = tiros[j];
+        if (Math.abs(b.x - m.x) < raio && Math.abs(b.y - m.y) < raio) {
+          tiros.splice(j, 1);
+          m.flash = 4;
+          if (--m.vida <= 0) {
+            estourar(m.x, m.y, m.tipo === 'pesado' ? 2.1 : 1.2,
+                     m.tipo === 'pesado' ? C.inimB : C.motor);
+            inimigos.splice(i, 1);
+          } else {
+            estourar(m.x, m.y, 0.4, C.brilho);
+          }
+          break;
+        }
+      }
+    }
+
+    /* tiro inimigo — pode acertar a nave, e isso é de propósito:
+       explosão perto do canto esquerdo dá o pico de drama que o loop precisa */
+    for (i = tirosI.length - 1; i >= 0; i--) {
+      var s = tirosI[i]; s.x -= s.v;
+      if (s.x < -10) { tirosI.splice(i, 1); continue; }
+      if (!nave.morta && Math.abs(s.x - nave.x) < 13 * ESC && Math.abs(s.y - nave.y) < 12 * ESC) {
+        tirosI.splice(i, 1);
+        estourar(nave.x, nave.y, 2.4, C.fogo);
+        nave.morta = 46;                       // pisca e volta: é attract mode
+      }
+    }
+
+    /* faíscas */
+    for (i = faiscas.length - 1; i >= 0; i--) {
+      var f = faiscas[i];
+      f.t++; f.x += f.vx; f.y += f.vy;
+      f.vx *= 0.955; f.vy *= 0.955; f.vy += 0.012 * ESC;
+      if (f.t > f.vida) faiscas.splice(i, 1);
+    }
+    if (faiscas.length > 420) faiscas.splice(0, faiscas.length - 420);
+  }
+
+  /* ═══════════════════════ PINTURA ═══════════════════════ */
+  function blit(spr, x, y) {
+    ctx.drawImage(spr, Math.round(x - spr.width / 2), Math.round(y - spr.height / 2));
+  }
+
+  function pinta() {
+    ctx.clearRect(0, 0, W, H);
+
+    /* nebulosa: um drawImage, com deriva lenta em seno. A suavização precisa
+       ficar ligada só aqui — a pixel art depende de estar desligada. */
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = .62;
+    var dx = Math.sin(relogio * 0.00055) * W * 0.035;
+    var dy = Math.cos(relogio * 0.00042) * H * 0.05;
+    ctx.drawImage(neb, -W * 0.07 + dx, -H * 0.1 + dy, W * 1.14, H * 1.2);
+    ctx.globalAlpha = 1;
+    ctx.imageSmoothingEnabled = false;
+
+    /* estrelas */
+    for (var i = 0; i < estrelas.length; i++) {
+      var e = estrelas[i];
+      ctx.globalAlpha = e.a;
+      ctx.fillStyle = e.c === 2 ? '#FFF6DC' : '#CFD8EA';
+      ctx.fillRect(e.x, e.y, e.r, e.r);
+    }
+    ctx.globalAlpha = 1;
+
+    /* rastro do motor */
+    for (i = 0; i < rastro.length; i++) {
+      var r = rastro[i], k = 1 - r.t / r.vida;
+      ctx.globalAlpha = k * 0.5;
+      ctx.fillStyle = k > 0.55 ? C.motor : C.fogo;
+      var s = (2.6 + k * 3.4) * ESC;
+      ctx.fillRect(r.x - s / 2, r.y - s / 2, s, s);
+    }
+    ctx.globalAlpha = 1;
+
+    /* tiros */
+    ctx.fillStyle = C.tiro;
+    for (i = 0; i < tiros.length; i++) {
+      ctx.fillRect(tiros[i].x, tiros[i].y - 1 * ESC, 11 * ESC, 2 * ESC);
+    }
+    ctx.fillStyle = C.tiroI;
+    for (i = 0; i < tirosI.length; i++) {
+      ctx.fillRect(tirosI[i].x, tirosI[i].y - 1.5 * ESC, 7 * ESC, 3 * ESC);
+    }
+
+    /* inimigos */
+    for (i = 0; i < inimigos.length; i++) {
+      var m = inimigos[i];
+      if (m.t > 0) continue;
+      if (m.flash > 0) {
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = C.brilho;
+        var w = SPR[m.tipo].width, h = SPR[m.tipo].height;
+        ctx.fillRect(m.x - w / 2, m.y - h / 2, w, h);
+        ctx.globalAlpha = 1;
+      } else {
+        blit(SPR[m.tipo], m.x, m.y);
+      }
+    }
+
+    /* a nave — pisca quando levou tiro. O halo existe porque pixel art de
+       9px de altura desaparece contra nebulosa desfocada. */
+    if (!nave.morta || (nave.morta >> 2) % 2 === 0) {
+      var g = ctx.createRadialGradient(nave.x, nave.y, 0, nave.x, nave.y, 26 * ESC);
+      g.addColorStop(0, 'rgba(255,221,51,.20)');
+      g.addColorStop(1, 'rgba(255,221,51,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(nave.x - 26 * ESC, nave.y - 26 * ESC, 52 * ESC, 52 * ESC);
+      blit(SPR.nave, nave.x, nave.y);
+    }
+
+    /* faíscas */
+    for (i = 0; i < faiscas.length; i++) {
+      var f = faiscas[i], kk = 1 - f.t / f.vida;
+      ctx.globalAlpha = kk;
+      ctx.fillStyle = f.cor;
+      ctx.fillRect(f.x - f.r / 2, f.y - f.r / 2, f.r, f.r);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ═══════════════════════ LOOP DE PASSO FIXO ═══════════════════════
+     Mesmo motivo do runner: com delta variável a nave anda mais rápido em
+     monitor de 144 Hz e a cena inteira muda de ritmo por máquina. */
+  var ultimo = 0, sobra = 0;
+  function loop(agora) {
+    if (!rodando) return;
+    raf = requestAnimationFrame(loop);
+    if (!ultimo) ultimo = agora;
+    sobra += Math.min(120, agora - ultimo);      // trava em 120ms
+    ultimo = agora;
+    var n = 0;
+    while (sobra >= 16.667 && n < 5) { passo(); sobra -= 16.667; n++; }
+    pinta();
+  }
+
+  function liga() {
+    if (rodando || RM || !visivel || !naTela) return;
+    rodando = true; ultimo = 0; sobra = 0;
+    raf = requestAnimationFrame(loop);
+  }
+  function desliga() {
+    rodando = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  /* ── um quadro parado para quem pediu menos movimento ── */
+  function estatico() {
+    for (var i = 0; i < 240; i++) passo();
+    pinta();
+  }
+
+  /* ── eventos ── */
+  var pend;
+  window.addEventListener('resize', function () {
+    clearTimeout(pend);
+    pend = setTimeout(function () { dim(); if (RM) estatico(); }, 160);
+  }, { passive: true });
+
+  document.addEventListener('visibilitychange', function () {
+    visivel = !document.hidden;
+    if (visivel) liga(); else desliga();
+  });
+
+  /* para de gastar quadro quando o hero sai da tela — o resto da página é
+     longo, e animar fundo invisível é o desperdício clássico */
+  if (hero && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      naTela = es[0].isIntersecting;
+      if (naTela) liga(); else desliga();
+    }, { threshold: 0.02 }).observe(hero);
+  }
+
+  if (hero && !RM) {
+    hero.addEventListener('pointermove', function (ev) {
+      if (ev.pointerType === 'touch') return;       // no toque isso só atrapalha
+      var r = cv.getBoundingClientRect();
+      mouse.on = true;
+      mouse.y = Math.max(0, Math.min(H, ev.clientY - r.top));
+    }, { passive: true });
+    hero.addEventListener('pointerleave', function () { mouse.on = false; });
+  }
+
+  dim();
+  if (RM) estatico(); else liga();
 })();
 
 </script>

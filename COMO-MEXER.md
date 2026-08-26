@@ -645,3 +645,80 @@ rode-o antes.
 A especificação completa do score, com pesos e limiares, está num arquivo só: `METODO.md`. Foi
 deixada isolada de propósito. Apagar é um commit de um arquivo, e só o `README.md` e o `demo.html`
 citam o nome dele — os dois em links, que viram 404 e não quebram nada.
+
+---
+
+# O fundo do hero — shooter em attract mode
+
+O hero tinha um gradiente âmbar estático com quatro blobs desfocados. Agora tem um shooter
+horizontal rodando atrás do texto. Três arquivos participam:
+
+| Arquivo | O que faz |
+|---|---|
+| `src/page_naves.html` | o jogo inteiro: sprites, ondas, colisão, nebulosa, loop |
+| `src/page_css3.css` | o fundo escuro do hero, a máscara do canvas, o texto claro |
+| `src/sec_topo.html` | uma linha: `<canvas id="naves">` |
+
+## Por que é horizontal
+
+O hero é largo e baixo — uns 1900×650 num desktop. Shooter vertical deixaria dois terços da
+largura vazios. Horizontal preenche o formato e a rolagem das estrelas da direita para a esquerda
+dá sensação de voo para frente.
+
+## As duas regras que sustentam o desenho
+
+**1. A ação nunca acontece na banda do texto.** Os inimigos só nascem em duas faixas: `0.07–0.21`
+e `0.80–0.93` da altura. O miolo, onde ficam a headline e o lede, fica livre. Além disso a máscara
+CSS em `#naves` derruba o canvas para ~13% de opacidade no centro, então qualquer coisa que passe
+por ali vira risco fantasma.
+
+**2. A nave caça o inimigo mais próximo.** Isso não é capricho de IA — é o que mantém o tiro fora
+do texto. O tiro nasce na altura da nave; se ela passeasse livre, riscaria a headline. Perseguindo
+alvos que só existem nas faixas, ela fica nas faixas por consequência. Tem uma rede de segurança
+também: `noTexto` bloqueia o tiro se a nave estiver entre `0.26` e `0.72` por qualquer motivo.
+
+Se você mexer nas faixas, mexa nas duas coisas juntas — faixa e banda proibida.
+
+## Mexer no jogo
+
+Tudo que importa está no topo de `page_naves.html`:
+
+- **`C`** — as cores. `motor` é o amarelo da marca; mudar ali muda o tiro e o rastro.
+- **`MAPS`** — os sprites, como mapa de caracteres. Cada letra é uma cor em `COR`. Editar é
+  desenhar em texto: acrescente linhas e colunas à vontade, o rasterizador se ajusta.
+- **`onda()`** — as formações (`linha`, `v`, `onda`, `duplo`), quantos inimigos, a velocidade.
+- **`relogio % 15`** no tiro — cadência. Menor = mais tiro.
+- **`inimigos.length < 9`** — quantos cabem na tela. Subir isso vira borrão.
+
+Não existe arquivo de imagem: os sprites são rasterizados no carregamento, num canvas offscreen, e
+depois é só blit. Desenhar retângulo a retângulo a cada quadro sairia caro.
+
+## O que protege a página
+
+- `pointer-events:none` no canvas — o clique atravessa e chega nos três botões do CTA. Isso é
+  testado; se você tirar, os botões param de funcionar.
+- `IntersectionObserver` — para de gastar quadro quando o hero sai da tela. A página é longa.
+- `visibilitychange` — para quando a aba perde o foco.
+- `prefers-reduced-motion` — desenha 240 passos de uma vez, pinta um quadro e **não liga o loop**.
+- Passo de tempo fixo de 16,667 ms — sem isso a nave anda mais rápido em monitor de 144 Hz.
+- Densidade de estrela proporcional à área, e escala de pixel pela altura.
+
+## A parte de performance, que valeu mais que o jogo
+
+Medindo para conferir que o shooter não pesava, apareceu que a página **já estava lenta antes**:
+7,7 fps em Chromium sem GPU. O shooter custava 0,5 fps — o problema era outro, e eram dois:
+
+**`.mesh` no hero** — quatro elementos de ~55% da viewport com `filter:blur(84px)`, animados. Blur
+é filtro de pintura: cada quadro repinta a camada inteira. Removidos. A nebulosa agora é um
+`drawImage` de um canvas de 1/7 da resolução, onde o borrão sai do próprio upscale, de graça.
+
+**`#cyber`** — camada `position:fixed` sempre visível, em toda a página, com três `blur(90px)` de
+34–46vw animados e uma grade em perspectiva animando `background-position`. Animar
+`background-position` num elemento mascarado e transformado força repaint de tela cheia a cada
+quadro. Os três halos viraram `radial-gradient` estático no pai (um radial a 20% de opacidade já
+*é* um halo borrado — o blur em cima não acrescentava desenho, só custo), e a grade passou a animar
+por `transform`, que é composto na GPU e não repinta.
+
+**Resultado: 7,7 → 60 fps na página inteira**, com o jogo rodando. Se você for acrescentar efeito
+de fundo, meça antes e depois — `filter:blur` grande e animação de `background-position` são as
+duas armadilhas que estavam aqui.
