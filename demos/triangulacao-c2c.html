@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Triangulação de contato — demonstração com dados fictícios</title>
+<meta name="description" content="Demonstração pública do motor de triangulação de contato: dado um executivo-alvo, ordena quem é o melhor canal para chegar nele. Cinco eixos de pontuação. Todos os dados desta página são inventados.">
+<meta name="robots" content="index,follow">
+<style>
+:root{
+  --gold:#F5A800; --goldT:#8A5B00; --wash:#FFF8E7; --paper:#FFFFFF;
+  --soft:#F7F8F9; --page:#F2F3F5; --line:#E3E5E9; --lineS:#CFD3D9;
+  --tx:#1B1F24; --tx2:#454B53; --tx3:#5C636D; --danger:#B02020; --rad:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--page);color:var(--tx);font-size:15px;line-height:1.6;
+  font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-feature-settings:"kern" 1}
+.w{max-width:1060px;margin:0 auto;padding:0 20px 72px}
+a{color:#0B5FA5}
+:focus-visible{outline:2.5px solid var(--goldT);outline-offset:2px;border-radius:4px}
+
+/* ── faixa de aviso: primeiro elemento da página, de propósito ── */
+.fake{background:#3A2E12;color:#FFE9B0;font-size:13.5px;padding:11px 20px;
+  text-align:center;line-height:1.5}
+.fake b{color:#FFF}
+.fake a{color:#FFD976}
+
+header.top{background:var(--paper);border-bottom:1px solid var(--line);padding:34px 20px 20px}
+header .in{max-width:1060px;margin:0 auto}
+.eb{font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:var(--tx3);
+  margin-bottom:9px;font-weight:600}
+h1{font-size:clamp(22px,4.2vw,31px);line-height:1.18;letter-spacing:-.5px;margin-bottom:7px}
+.dek{color:var(--tx2);font-size:14px;max-width:74ch}
+.kpis{display:flex;gap:26px;flex-wrap:wrap;margin-top:16px;padding-top:15px;
+  border-top:1px solid var(--line)}
+.kpi b{display:block;font-size:20px;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi span{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--tx3)}
+
+/* ── cartão do alvo ── */
+.alvo{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--gold);
+  border-radius:var(--rad);padding:20px 22px;margin:26px 0 20px}
+.alvo h2{font-size:21px;letter-spacing:-.3px;margin-bottom:2px}
+.alvo .role{color:var(--tx2);font-size:14px;margin-bottom:12px}
+.alvo .fonte{font-size:12.5px;color:var(--tx3);margin-bottom:10px}
+.tl{list-style:none;border-left:2px solid var(--line);padding-left:15px;margin-top:4px}
+.tl li{font-size:13.5px;color:var(--tx2);padding:3px 0}
+.tl b{color:var(--tx);font-weight:600}
+.tl span{color:var(--tx3);font-variant-numeric:tabular-nums}
+
+/* ── melhor canal ── */
+.best{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;background:var(--wash);
+  border:1px solid #EBD8A8;border-left:4px solid var(--gold);border-radius:10px;
+  padding:13px 16px;margin:0 0 18px}
+.best .rot{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--goldT);white-space:nowrap}
+.best b{font-size:17px;letter-spacing:-.2px}
+.best .det{font-size:13px;color:var(--tx2)}
+
+/* ── barra de filtro ── */
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--paper);
+  border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin:0 0 18px;
+  position:sticky;top:0;z-index:5}
+.bar .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx3);
+  font-weight:700}
+.pill{background:var(--paper);border:1px solid var(--lineS);border-radius:7px;
+  padding:6px 11px;font:inherit;font-size:12.5px;font-weight:700;color:var(--tx2);cursor:pointer}
+.pill em{font-style:normal;font-weight:400;color:var(--tx3);margin-left:5px}
+.pill[aria-pressed="true"]{background:var(--tx);border-color:var(--tx);color:#fff}
+.pill[aria-pressed="true"] em{color:#CDD1D6}
+.bar .cnt{margin-left:auto;font-size:12.5px;color:var(--tx3);font-variant-numeric:tabular-nums}
+
+/* ── cartão de pessoa ── */
+.ch{display:grid;grid-template-columns:112px 1fr;background:var(--paper);
+  border:1px solid var(--line);border-left:4px solid #DDE0E4;border-radius:var(--rad);
+  margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.05);overflow:hidden}
+.ch[data-f="A+"]{border-left-color:var(--gold)}
+.ch[data-f="A"]{border-left-color:#C9A227}
+.ch[data-f="B"]{border-left-color:#B9BDC4}
+.ch[data-f="C"]{border-left-color:#D6D9DD}
+.ch[data-f="D"]{border-left-color:#E7E9EC}
+.ch.hide{display:none}
+.idcol{background:var(--soft);border-right:1px solid var(--line);padding:15px 9px;
+  text-align:center;display:flex;flex-direction:column;gap:9px;align-items:center}
+.av{position:relative;width:52px;height:52px;border-radius:50%;background:var(--wash);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:17px;color:var(--goldT);flex:0 0 auto}
+.pos{font-size:19px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.pos em{display:block;font-style:normal;font-size:9.5px;color:var(--tx3);
+  letter-spacing:.5px;margin-top:3px;text-transform:uppercase}
+.bd{border:1.6px solid var(--lineS);color:var(--tx2);border-radius:7px;padding:3px 0;
+  width:100%;font-weight:700;font-size:13px;line-height:1.25}
+.ch[data-f="A+"] .bd{border-color:var(--goldT);color:var(--goldT)}
+.ch[data-f="A"] .bd{border-color:#8A6D1F;color:#8A6D1F}
+.bd em{display:block;font-style:normal;font-size:11.5px;font-weight:600;opacity:.85;
+  font-variant-numeric:tabular-nums}
+.meter{display:block;height:3px;background:#EDEEF0;border-radius:2px;margin:5px 4px 0;width:100%}
+.meter i{display:block;height:100%;background:#C2C6CC;border-radius:2px}
+.ch[data-f="A+"] .meter i,.ch[data-f="A"] .meter i{background:var(--gold)}
+.body{padding:15px 21px}
+.body h3{font-size:18px;letter-spacing:-.2px;line-height:1.3}
+.body .role{font-size:13.5px;color:var(--tx2);margin-bottom:7px}
+.chain{font-size:13px;color:var(--tx2);background:var(--soft);border:1px solid var(--line);
+  border-radius:7px;padding:8px 12px;margin-bottom:14px}
+.chain b{color:var(--goldT)}
+.rt{display:grid;grid-template-columns:74px 1fr;gap:14px;align-items:baseline;
+  padding:8px 0;border-bottom:1px solid #F0F1F3}
+.rt:last-of-type{border-bottom:0}
+.rt .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1.1px;color:#6B737C;
+  font-weight:700;padding-top:3px}
+.rt .v{font-size:14.5px}
+.rt.flow .v{color:var(--tx2)}
+.rt.ress .lbl{color:var(--danger)}
+.rt.ress .v{color:#7C2222}
+.mais{margin-top:13px;border-top:1px solid var(--line);padding-top:9px}
+.mais summary{cursor:pointer;font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--tx3);font-weight:700;list-style:none;display:inline-block;padding:5px 10px;
+  border:1px solid var(--line);border-radius:6px}
+.mais summary::-webkit-details-marker{display:none}
+.mais summary:hover{background:var(--soft);color:var(--tx2)}
+.mais .in{font-size:13.5px;color:var(--tx2);margin-top:10px}
+.mais .in p{margin:6px 0}
+.mais b{color:var(--tx)}
+.pts{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.pt{background:var(--soft);border:1px solid var(--line);border-radius:6px;
+  padding:4px 9px;font-size:12px;color:var(--tx2);font-variant-numeric:tabular-nums}
+.pt b{color:var(--tx)}
+.pt.tot{background:var(--wash);border-color:#EBD8A8;color:var(--goldT)}
+
+/* ── metodologia ── */
+.notes{background:var(--paper);border:1px solid var(--line);border-radius:var(--rad);
+  padding:22px;font-size:14px;color:var(--tx2);margin-top:34px}
+.notes h2{font-size:19px;color:var(--tx);margin-bottom:4px;letter-spacing:-.2px}
+.notes h3{font-size:14.5px;color:var(--tx);margin:18px 0 5px}
+.notes p{margin:8px 0;max-width:78ch}
+.notes li{margin:6px 0 6px 20px}
+.notes b{color:var(--tx)}
+.notes code{background:var(--soft);border:1px solid var(--line);border-radius:4px;
+  padding:1px 5px;font-size:12.5px}
+.eixos{display:grid;gap:9px;margin:12px 0}
+.ex{display:grid;grid-template-columns:56px 1fr;gap:13px;align-items:baseline;
+  background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.ex .n{font-size:15px;font-weight:700;color:var(--goldT);font-variant-numeric:tabular-nums}
+.ex .d{font-size:13.5px}
+.ex .d b{display:block;font-size:13.5px}
+footer{margin-top:32px;font-size:12.5px;color:var(--tx3);text-align:center;line-height:1.75}
+
+@media(max-width:700px){
+  .ch{grid-template-columns:1fr}
+  .idcol{flex-direction:row;border-right:0;border-bottom:1px solid var(--line);
+    padding:9px 15px;gap:14px;text-align:left}
+  .av{width:40px;height:40px;font-size:14px}
+  .pos{font-size:16px;display:flex;align-items:baseline;gap:6px}
+  .pos em{display:inline;margin:0}
+  .bd{width:auto;padding:3px 11px}.bd em{display:inline;margin-left:6px}
+  .meter{display:none}
+  .body{padding:15px}
+  .rt{grid-template-columns:1fr;gap:2px}
+  .bar{position:static}
+}
+@media(pointer:coarse){.pill{min-height:44px}.mais summary{min-height:44px;line-height:34px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{
+  body{background:#fff}.bar,.fake{display:none}
+  .ch{break-inside:avoid;box-shadow:none}
+  .mais summary{display:none}.mais .in{display:block!important}
+  details{open:true}
+}
+</style>
+</head>
+<body>
+
+<p class="fake"><b>Todos os dados desta página são inventados.</b> As empresas, as pessoas,
+ os cargos e os projetos não existem. O que é real é o motor de pontuação — a mesma
+ especificação descrita em <a href="https://github.com/Xigante/triangulacao-c2c/blob/main/METODO.md">METODO.md</a>.</p>
+
+<header class="top"><div class="in">
+ <p class="eb">Demonstração · motor de triangulação de contato</p>
+ <h1>Quem é o melhor canal para chegar neste executivo</h1>
+ <p class="dek">Dado um alvo e uma base de pessoas que passaram pela mesma empresa, o
+  sistema devolve uma fila estritamente ordenada — do melhor canal ao pior — e, para cada
+  pessoa, quatro frases prontas para falar em voz alta numa reunião. A ordem sai de cinco
+  eixos de pontuação, não de opinião.</p>
+ <div class="kpis">
+  <span class="kpi"><b>22</b><span>canais avaliados</span></span>
+  <span class="kpi"><b>5</b><span>faixa A+</span></span>
+  <span class="kpi"><b>6</b><span>faixa A</span></span>
+  <span class="kpi"><b>5</b><span>eixos de score</span></span>
+  <span class="kpi"><b>108→100</b><span>normalização</span></span>
+ </div>
+</div></header>
+
+<main class="w">
+
+<section class="alvo" aria-labelledby="alvo-h">
+ <p class="eb">Alvo · cargo mais alto encontrado</p>
+ <h2 id="alvo-h">Otávio Bittencourt Rasmussen</h2>
+ <p class="role">CEO / Diretor-Presidente · Ventania Agroindustrial</p>
+ <p class="fonte">Histórico datado a partir de: perfil público (dados fictícios)</p>
+ <ul class="tl"><li><b>CEO / Diretor-Presidente</b> <span>(mar/2024 – o momento)</span></li><li><b>VP de Agronegócio — América do Sul</b> <span>(jan/2017 – mar/2024)</span></li><li><b>Trading Manager — Grãos</b> <span>(fev/2014 – jan/2017)</span></li><li><b>Trader de Soja e Milho</b> <span>(ago/2011 – fev/2014)</span></li><li><b>Coordenador de Planejamento Comercial</b> <span>(abr/2007 – ago/2011)</span></li><li><b>Analista de Originação</b> <span>(set/2004 – abr/2007)</span></li></ul>
+</section>
+
+<p class="best">
+ <span class="rot">Ligar primeiro</span>
+ <b>Marina Callado Feitosa</b>
+ <span class="det">Diretora de Logística e Operações · faixa A+, 94.4 pontos</span>
+</p>
+
+<div class="bar">
+ <span class="lbl" id="flbl">Mostrar</span>
+ <button class="pill" type="button" data-f="todos" aria-pressed="true">Todos<em>22</em></button>
+ <button class="pill" type="button" data-f="A+" aria-pressed="false">A+<em>5</em></button><button class="pill" type="button" data-f="A" aria-pressed="false">A<em>6</em></button><button class="pill" type="button" data-f="B" aria-pressed="false">B<em>4</em></button><button class="pill" type="button" data-f="C" aria-pressed="false">C<em>2</em></button><button class="pill" type="button" data-f="D" aria-pressed="false">D<em>5</em></button>
+ <span class="cnt" id="cnt" aria-live="polite">22 de 22</span>
+</div>
+
+<div id="fila">
+<article class="ch" data-f="A+">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">MC</span>
+  <span class="pos">1<em>na fila</em></span>
+  <span class="bd">A+<em>94.4</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:94%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Marina Callado Feitosa</h3>
+  <p class="role">Diretora de Logística e Operações · Curitiba, PR</p>
+  <p class="chain"><b>N-1</b> — diretoria de linha dentro do P&amp;L do país</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Escoamento da originação: porto, frete e armazém — o custo que decide se o grão sai.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Diretoria de linha respondendo direto a ele: demanda e cobrança na mesma mesa.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">20 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Placement, originado por sócio</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretora de Logística e Operações</b> <span>(jul/2019 – o momento)</span></li><li><b>Gerente Executiva de Terminais</b> <span>(mar/2013 – jul/2019)</span></li><li><b>Coordenadora de Armazenagem</b> <span>(fev/2006 – mar/2013)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>38</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>20</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>102.0</b> → <b>94.4</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A+">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">RP</span>
+  <span class="pos">2<em>na fila</em></span>
+  <span class="bd">A+<em>93.5</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:94%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Reginaldo Pastore Vilanova</h3>
+  <p class="role">Diretor de Originação Nacional · Uberlândia, MG</p>
+  <p class="chain"><b>N-1</b> — diretoria de linha dentro do P&amp;L do país</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Originação, o insumo do P&amp;L dele: quanto grão entra do produtor e a que prêmio.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Diretoria de linha respondendo direto a ele: demanda e cobrança na mesma mesa.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">17 anos na empresa junto com ele — dividiram a fase de mesa, de 2011 a 2017; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Shortlist</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretor de Originação Nacional</b> <span>(abr/2021 – o momento)</span></li><li><b>Gerente Comercial — Triângulo</b> <span>(mai/2015 – abr/2021)</span></li><li><b>Gestor Territorial</b> <span>(out/2009 – mai/2015)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>38</b></span><span class="pt">convívio <b>27</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>16</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>101.0</b> → <b>93.5</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A+">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">NS</span>
+  <span class="pos">3<em>na fila</em></span>
+  <span class="bd">A+<em>83.3</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:83%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Nivaldo Serrão Espíndola</h3>
+  <p class="role">Superintendente Agrícola · Rio Verde, GO</p>
+  <p class="chain"><b>N-1</b> — diretoria de linha dentro do P&amp;L do país</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">A ponta de campo, onde a originação de fato acontece.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Diretoria de linha respondendo direto a ele: demanda e cobrança na mesma mesa.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">18 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Entrevista</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">Hoje está numa ex-JV que saiu do grupo: vale como fonte, não como contato interno.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Superintendente Agrícola (ex-JV)</b> <span>(out/2019 – o momento)</span></li><li><b>Gerente Corporativo de Mecanização</b> <span>(jun/2013 – out/2019)</span></li><li><b>Coordenador de Controle Agrícola</b> <span>(mar/2008 – jun/2013)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Ex-JV / empresa que saiu do grupo</p>
+    <p><b>Nota:</b> Hoje está numa ex-JV que saiu do grupo: vale como fonte, não como contato interno.</p>
+    <div class="pts"><span class="pt">cadeia <b>38</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>11</b></span><span class="pt">acesso <b>5</b></span><span class="pt tot">de 108 <b>90.0</b> → <b>83.3</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A+">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">AF</span>
+  <span class="pos">4<em>na fila</em></span>
+  <span class="bd">A+<em>81.5</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:82%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Alcides Ferrarezi Bonomo</h3>
+  <p class="role">Diretor Industrial de Portos · Santos, SP</p>
+  <p class="chain"><b>N-1</b> — diretoria de linha dentro do P&amp;L do país</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Escoamento da originação: porto, frete e armazém.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Diretoria de linha respondendo direto a ele: demanda e cobrança na mesma mesa.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">15 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Prévia</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretor Industrial de Portos</b> <span>(jan/2022 – o momento)</span></li><li><b>Gerente de Planta</b> <span>(nov/2016 – jan/2022)</span></li><li><b>Engenheiro de Processos</b> <span>(fev/2011 – nov/2016)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>38</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>6</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>88.0</b> → <b>81.5</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A+">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">SK</span>
+  <span class="pos">5<em>na fila</em></span>
+  <span class="bd">A+<em>80.6</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:81%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Solange Kruger Bettega</h3>
+  <p class="role">Diretora de Estratégia e M&amp;A · São Paulo, SP</p>
+  <p class="chain"><b>Par (N0)</b> — diretoria de função corporativa, comitê local</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">O número dele: fechamento, forecast e orçamento da operação que ele comanda.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Par de comitê: mesma mesa de liderança, sem relação de reporte.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">13 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Shortlist, originado por sócio</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretora de Estratégia e M&amp;A</b> <span>(set/2020 – o momento)</span></li><li><b>Head de Portfólio e Inteligência de Mercado</b> <span>(nov/2013 – set/2020)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>26</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>17</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>87.0</b> → <b>80.6</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">HB</span>
+  <span class="pos">6<em>na fila</em></span>
+  <span class="bd">A<em>79.6</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:80%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Heloísa Bandeira Quintanilha</h3>
+  <p class="role">Head de Milho e Joint Ventures · São Paulo, SP</p>
+  <p class="chain"><b>N-2</b> — gerência sênior/head dentro da cadeia</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Função de apoio ao negócio dele, com mesa no meio do caminho.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Um degrau abaixo: reporta a um diretor que responde a ele, então aparecia nas reuniões de linha.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">16 anos na empresa junto com ele — dividiram a fase de mesa, de 2011 a 2017; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Entrevista</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Head de Milho e Joint Ventures</b> <span>(set/2019 – o momento)</span></li><li><b>Trading Manager — América do Sul</b> <span>(fev/2016 – set/2019)</span></li><li><b>Trader de Milho</b> <span>(abr/2010 – fev/2016)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>31</b></span><span class="pt">convívio <b>27</b></span><span class="pt">senioridade <b>9</b></span><span class="pt">Flow <b>11</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>86.0</b> → <b>79.6</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">CW</span>
+  <span class="pos">7<em>na fila</em></span>
+  <span class="bd">A<em>77.8</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:78%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Cassiano Wollinger Deodato</h3>
+  <p class="role">Gerente Sênior de Comércio Exterior · Paranaguá, PR</p>
+  <p class="chain"><b>N-2</b> — gerência sênior/head dentro da cadeia</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Execução do que a mesa fecha: contrato virando navio, documento e despacho.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Um degrau abaixo: reporta a um diretor que responde a ele, então aparecia nas reuniões de linha.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">12 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Shortlist</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">O perfil não mostra empregador atual: confirmar o vínculo antes de ligar.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Gerente Sênior de Comércio Exterior</b> <span>(mai/2021 – o momento)</span></li><li><b>Coordenador de Operações de Comex</b> <span>(mar/2017 – mai/2021)</span></li><li><b>Analista de Logística Pleno</b> <span>(jun/2014 – mar/2017)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Perfil sem empregador visível</p>
+    <p><b>Nota:</b> O perfil não mostra empregador atual: confirmar o vínculo antes de ligar.</p>
+    <div class="pts"><span class="pt">cadeia <b>31</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>9</b></span><span class="pt">Flow <b>16</b></span><span class="pt">acesso <b>4</b></span><span class="pt tot">de 108 <b>84.0</b> → <b>77.8</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">TM</span>
+  <span class="pos">8<em>na fila</em></span>
+  <span class="bd">A<em>76.9</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:77%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Tarcísio Menegotto Prado</h3>
+  <p class="role">Trader Sênior de Farelo · São Paulo, SP</p>
+  <p class="chain"><b>N-2</b> — gerência sênior/head dentro da cadeia</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Mesa. Posição, prêmio e hedge — o mesmo assunto que ele tocou na fase de trader.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Um degrau abaixo: reporta a um diretor que responde a ele, então aparecia nas reuniões de linha.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">7 anos na empresa junto com ele — dividiram a fase de mesa, de 2011 a 2017; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Placement</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">Já saiu da empresa: ajuda na franqueza, atrapalha no acesso interno.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Trader Sênior de Farelo</b> <span>(jan/2016 – nov/2019)</span></li><li><b>Trader de Óleos</b> <span>(mar/2012 – jan/2016)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Ex-colaborador em outra empresa — fala com mais liberdade</p>
+    <p><b>Nota:</b> Já saiu da empresa: ajuda na franqueza, atrapalha no acesso interno.</p>
+    <div class="pts"><span class="pt">cadeia <b>31</b></span><span class="pt">convívio <b>17</b></span><span class="pt">senioridade <b>9</b></span><span class="pt">Flow <b>20</b></span><span class="pt">acesso <b>6</b></span><span class="pt tot">de 108 <b>83.0</b> → <b>76.9</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">IM</span>
+  <span class="pos">9<em>na fila</em></span>
+  <span class="bd">A<em>76.9</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:77%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Ivete Marcondes Sanhudo</h3>
+  <p class="role">Global Head of Crush — Value Chain · Rotterdam, Holanda</p>
+  <p class="chain"><b>Linha global da mesma cadeia</b> — conhece o mundo dele, fora do time</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Linha global da mesma cadeia: conhece o mundo dele, não está no time dele.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Linha global da mesma cadeia: cruzava com ele em fórum de negócio, não no time dele.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">14 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Entrevista, originado por sócio</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Global Head of Crush</b> <span>(mar/2020 – o momento)</span></li><li><b>Regional Crush Manager — EMEA</b> <span>(jan/2012 – mar/2020)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>24</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>15</b></span><span class="pt">Flow <b>12</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>83.0</b> → <b>76.9</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">AN</span>
+  <span class="pos">10<em>na fila</em></span>
+  <span class="bd">A<em>74.1</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:74%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Aparecido Nhoatto Vergueiro</h3>
+  <p class="role">Gerente de Contas Estratégicas · Goiânia, GO</p>
+  <p class="chain"><b>N-3</b> — gerência dentro da cadeia</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Carteira de key account: o cliente grande que sustenta o volume dele.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Dois degraus abaixo: o assunto dele chegava filtrado por dois níveis.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">22 anos na empresa junto com ele — dividiram a fase de mesa, de 2011 a 2017; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Shortlist, originado por sócio</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Gerente de Contas Estratégicas</b> <span>(mar/2012 – o momento)</span></li><li><b>Supervisor Comercial Key Account</b> <span>(jun/2007 – mar/2012)</span></li><li><b>Analista Comercial</b> <span>(jan/2003 – jun/2007)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>22</b></span><span class="pt">convívio <b>27</b></span><span class="pt">senioridade <b>6</b></span><span class="pt">Flow <b>17</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>80.0</b> → <b>74.1</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="A">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">BA</span>
+  <span class="pos">11<em>na fila</em></span>
+  <span class="bd">A<em>71.3</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:71%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Benedito Aragão Chiaparini</h3>
+  <p class="role">Membro do Conselho de Administração · São Paulo, SP</p>
+  <p class="chain"><b>Conselho</b> — acima do alvo</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Está acima dele: o acesso existe, mas pedir intermediação é desconfortável.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Assento de conselho: fala com ele de cima, o que torna o pedido desconfortável.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">10 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Placement, originado por sócio</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">Acima do alvo no organograma — use só se os canais de linha falharem.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Membro do Conselho de Administração</b> <span>(abr/2016 – o momento)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    <p><b>Nota:</b> Acima do alvo no organograma — use só se os canais de linha falharem.</p>
+    <div class="pts"><span class="pt">cadeia <b>14</b></span><span class="pt">convívio <b>20</b></span><span class="pt">senioridade <b>15</b></span><span class="pt">Flow <b>20</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>77.0</b> → <b>71.3</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="B">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">CW</span>
+  <span class="pos">12<em>na fila</em></span>
+  <span class="bd">B<em>68.5</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:68%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Célia Wruck Dallagnol</h3>
+  <p class="role">Diretora Comercial — Argentina · Buenos Aires, Argentina</p>
+  <p class="chain"><b>Linha global da mesma cadeia</b> — conhece o mundo dele, fora do time</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Mesma cadeia, outro país: entende o negócio, não senta no comitê dele.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Linha global da mesma cadeia: cruzava com ele em fórum de negócio, não no time dele.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">12 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Prévia</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretora Comercial — Argentina</b> <span>(out/2018 – o momento)</span></li><li><b>Gerente Regional</b> <span>(mai/2014 – out/2018)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>24</b></span><span class="pt">convívio <b>24</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>6</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>74.0</b> → <b>68.5</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="B">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">RT</span>
+  <span class="pos">13<em>na fila</em></span>
+  <span class="bd">B<em>62.0</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:62%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Rosângela Tibúrcio Vasques</h3>
+  <p class="role">Diretora de Gente e Gestão · São Paulo, SP</p>
+  <p class="chain"><b>Par (N0)</b> — diretoria de função corporativa, comitê local</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Par de comitê: senta na mesma mesa de liderança, sem relação de reporte.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Par de comitê: mesma mesa de liderança, sem relação de reporte.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">9 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Mapeamento</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretora de Gente e Gestão</b> <span>(jun/2021 – o momento)</span></li><li><b>Gerente Executiva de RH</b> <span>(mar/2017 – jun/2021)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>26</b></span><span class="pt">convívio <b>18</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>3</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>67.0</b> → <b>62.0</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="B">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">DR</span>
+  <span class="pos">14<em>na fila</em></span>
+  <span class="bd">B<em>59.3</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:59%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Djalma Ruschel Antunes</h3>
+  <p class="role">Gerente Comercial — Centro-Oeste · Rondonópolis, MT</p>
+  <p class="chain"><b>N-3</b> — gerência dentro da cadeia</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Venda do que a originação e a planta entregam: meta, cliente e preço.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Dois degraus abaixo: o assunto dele chegava filtrado por dois níveis.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">11 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Prévia</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Gerente Comercial — Centro-Oeste</b> <span>(fev/2020 – o momento)</span></li><li><b>Supervisor Comercial</b> <span>(ago/2015 – fev/2020)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>22</b></span><span class="pt">convívio <b>22</b></span><span class="pt">senioridade <b>6</b></span><span class="pt">Flow <b>6</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>64.0</b> → <b>59.3</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="B">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">OB</span>
+  <span class="pos">15<em>na fila</em></span>
+  <span class="bd">B<em>57.4</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:57%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Oswaldo Bracht Cantarelli</h3>
+  <p class="role">Diretor de Marketing Institucional · São Paulo, SP</p>
+  <p class="chain"><b>Par (N0)</b> — diretoria de função corporativa, comitê local</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Diretoria fora da cadeia comercial: conhece a casa, não o número dele.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Par de comitê: mesma mesa de liderança, sem relação de reporte.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">5 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Prévia</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Diretor de Marketing Institucional</b> <span>(ago/2021 – o momento)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>26</b></span><span class="pt">convívio <b>10</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>6</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>62.0</b> → <b>57.4</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="C">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">LK</span>
+  <span class="pos">16<em>na fila</em></span>
+  <span class="bd">C<em>48.1</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:48%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Lurdes Kaminski Barreto</h3>
+  <p class="role">Global CIO — Value Chain Technology · Genebra, Suíça</p>
+  <p class="chain"><b>Função corporativa com escopo global</b> — fora do P&amp;L do país</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Função corporativa com escopo global: fora do P&amp;L do país dele.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Função corporativa fora do país: mesmo grupo, outro P&amp;L.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">7 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a On hold</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Global CIO — Value Chain Technology</b> <span>(mai/2019 – o momento)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>12</b></span><span class="pt">convívio <b>14</b></span><span class="pt">senioridade <b>15</b></span><span class="pt">Flow <b>3</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>52.0</b> → <b>48.1</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="C">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">GA</span>
+  <span class="pos">17<em>na fila</em></span>
+  <span class="bd">C<em>44.4</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:44%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Genésio Altenhofen Poletto</h3>
+  <p class="role">Diretor Jurídico e Compliance · São Paulo, SP</p>
+  <p class="chain"><b>Par (N0)</b> — diretoria de função corporativa, comitê local</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Par de comitê, mas fora da cadeia do negócio dele.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Par de comitê: mesma mesa de liderança, sem relação de reporte.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">sobreposição estimada, não medida</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Mapeamento</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">O link do CRM está quebrado: refazer a busca antes de acionar.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><span>Histórico não coletado nesta rodada.</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> URL do CRM quebrada</p>
+    <p><b>Nota:</b> Convívio estimado — histórico não coletado.</p><p><b>Nota:</b> O link do CRM está quebrado: refazer a busca antes de acionar.</p>
+    <div class="pts"><span class="pt">cadeia <b>26</b></span><span class="pt">convívio <b>5</b></span><span class="pt">senioridade <b>12</b></span><span class="pt">Flow <b>3</b></span><span class="pt">acesso <b>2</b></span><span class="pt tot">de 108 <b>48.0</b> → <b>44.4</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="D">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">MT</span>
+  <span class="pos">18<em>na fila</em></span>
+  <span class="bd">D<em>39.8</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:40%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Maurílio Tancredi Sobral</h3>
+  <p class="role">Gerente de Manutenção Industrial · Rio Grande, RS</p>
+  <p class="chain"><b>Função corporativa abaixo de diretoria</b> </p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Função de apoio abaixo de diretoria: conhece a planta por dentro.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Função de apoio abaixo de diretoria: conhece a operação, não a mesa dele.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">5 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Entrevista</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">Saiu em 2021: fala com liberdade, sem acesso interno.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Gerente de Manutenção Industrial</b> <span>(jul/2018 – nov/2021)</span></li><li><b>Coordenador de Manutenção</b> <span>(fev/2016 – jul/2018)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Ex-colaborador em outra empresa — fala com mais liberdade</p>
+    <p><b>Nota:</b> Saiu em 2021: fala com liberdade, sem acesso interno.</p>
+    <div class="pts"><span class="pt">cadeia <b>10</b></span><span class="pt">convívio <b>10</b></span><span class="pt">senioridade <b>6</b></span><span class="pt">Flow <b>11</b></span><span class="pt">acesso <b>6</b></span><span class="pt tot">de 108 <b>43.0</b> → <b>39.8</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="D">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">UP</span>
+  <span class="pos">19<em>na fila</em></span>
+  <span class="bd">D<em>38.0</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:38%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Ubirajara Peçanha Molinari</h3>
+  <p class="role">Coordenador de Planejamento Integrado · Campinas, SP</p>
+  <p class="chain"><b>N-4</b> — coordenação/análise dentro da cadeia</p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Enxerga o número consolidado da cadeia antes de virar reunião de diretoria.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Base da cadeia: produzia o número que subia, sem contato direto frequente.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">8 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Prévia</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">Situação não verificada nesta rodada.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Coordenador de Planejamento Integrado</b> <span>(jan/2022 – o momento)</span></li><li><b>Analista de Planejamento Sr.</b> <span>(set/2018 – jan/2022)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Situação não verificada</p>
+    <p><b>Nota:</b> Situação não verificada nesta rodada.</p>
+    <div class="pts"><span class="pt">cadeia <b>13</b></span><span class="pt">convívio <b>16</b></span><span class="pt">senioridade <b>3</b></span><span class="pt">Flow <b>6</b></span><span class="pt">acesso <b>3</b></span><span class="pt tot">de 108 <b>41.0</b> → <b>38.0</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="D">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">TG</span>
+  <span class="pos">20<em>na fila</em></span>
+  <span class="bd">D<em>31.5</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:32%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Terezinha Gonçalves Wanderley</h3>
+  <p class="role">Recepcionista Corporativa · São Paulo, SP</p>
+  <p class="chain"><b>Sem relação funcional com o negócio do alvo</b> </p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Sem relação funcional com o negócio do alvo.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Sem canal funcional: contato eventual de corredor, no máximo.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">7 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Mapeamento</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Recepcionista Corporativa</b> <span>(jan/2019 – o momento)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>8</b></span><span class="pt">convívio <b>14</b></span><span class="pt">senioridade <b>1</b></span><span class="pt">Flow <b>3</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>34.0</b> → <b>31.5</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="D">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">VF</span>
+  <span class="pos">21<em>na fila</em></span>
+  <span class="bd">D<em>27.8</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:28%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Vanderleia Frutuoso Anhaia</h3>
+  <p class="role">Analista de Suprimentos Jr. · Londrina, PR</p>
+  <p class="chain"><b>Função corporativa abaixo de diretoria</b> </p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Está na cadeia, mas quatro degraus abaixo: canal fraco.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Função de apoio abaixo de diretoria: conhece a operação, não a mesa dele.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">4 anos na empresa junto com ele; estava lá quando ele era VP, de 2017 a 2024</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Mapeamento</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><b>Analista de Suprimentos Jr.</b> <span>(mar/2022 – o momento)</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Na empresa, confirmado no perfil</p>
+    
+    <div class="pts"><span class="pt">cadeia <b>10</b></span><span class="pt">convívio <b>8</b></span><span class="pt">senioridade <b>1</b></span><span class="pt">Flow <b>3</b></span><span class="pt">acesso <b>8</b></span><span class="pt tot">de 108 <b>30.0</b> → <b>27.8</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+<article class="ch" data-f="D">
+ <div class="idcol">
+  <span class="av" aria-hidden="true">WT</span>
+  <span class="pos">22<em>na fila</em></span>
+  <span class="bd">D<em>0.0</em></span>
+  <span class="meter" aria-hidden="true"><i style="width:0%"></i></span>
+ </div>
+ <div class="body">
+  <h3>Waldemar Tessaro Pignatari</h3>
+  <p class="role">Consultor Independente · Florianópolis, SC</p>
+  <p class="chain"><b>Sem relação funcional com o negócio do alvo</b> </p>
+  <div class="rt"><span class="lbl">Por que</span><span class="v">Cadastro aponta passagem pela empresa que o histórico público não confirma.</span></div><div class="rt"><span class="lbl">Canal</span><span class="v">Sem canal — a passagem pela empresa não se confirma.</span></div><div class="rt"><span class="lbl">Juntos</span><span class="v">sobreposição estimada, não medida</span></div><div class="rt flow"><span class="lbl">Flow</span><span class="v">chegou a Mapeamento</span></div><div class="rt ress"><span class="lbl">Ressalva</span><span class="v">O histórico não registra passagem pela empresa: score zerado, não acione.</span></div>
+  <details class="mais">
+   <summary>Histórico e pontuação</summary>
+   <div class="in">
+    <p><b>Cargos na empresa-alvo</b></p>
+    <ul class="tl"><li><span>Histórico não coletado nesta rodada.</span></li></ul>
+    <p><b>Acessibilidade hoje:</b> Nunca trabalhou lá (cadastro errado)</p>
+    <p><b>Nota:</b> O histórico não registra passagem pela empresa: score zerado, não acione.</p>
+    <div class="pts"><span class="pt">cadeia <b>0</b></span><span class="pt">convívio <b>0</b></span><span class="pt">senioridade <b>0</b></span><span class="pt">Flow <b>0</b></span><span class="pt">acesso <b>0</b></span><span class="pt tot">de 108 <b>0.0</b> → <b>0.0</b></span></div>
+   </div>
+  </details>
+ </div>
+</article>
+</div>
+
+<section class="notes" aria-labelledby="met-h">
+ <h2 id="met-h">Como o score funciona</h2>
+ <p>Cinco eixos. Os tetos somam <b>108</b> e o resultado é normalizado para 0–100. Os tetos
+  não fecham em 100 de propósito: forçar isso obriga a distorcer o peso relativo, e cadeia
+  de reporte precisa valer mais que senioridade. Normalizar no fim é mais honesto que torcer
+  os pesos na frente.</p>
+
+ <div class="eixos">
+  <div class="ex"><span class="n">0–38</span><span class="d"><b>Cadeia de reporte</b>
+   Onde a pessoa está em relação ao alvo: N-1, N-2, par de comitê, linha global, conselho.
+   Árvore de decisão em que a primeira regra que casa vence — a ordem é o que faz funcionar.</span></div>
+  <div class="ex"><span class="n">0–27</span><span class="d"><b>Convívio</b>
+   <code>min(24, anos × 2) + 3</code> se a pessoa dividiu a fase de mesa do alvo. Anos medidos
+   cargo a cargo, não estimados. Sem histórico coletado: 5 pontos fixos e a ressalva na saída.</span></div>
+  <div class="ex"><span class="n">0–15</span><span class="d"><b>Senioridade</b>
+   Escada de cargo. <code>head</code> vale 9 e não 12 de propósito — "Gerente de Comex |
+   Head de Conformidade" não é diretoria.</span></div>
+  <div class="ex"><span class="n">0–20</span><span class="d"><b>Relação com a consultoria</b>
+   A etapa mais avançada alcançada no funil, em qualquer projeto. Os saltos não são lineares.
+   Mais 1 ponto se algum projeto foi originado por sócio: já existe dono da conversa.</span></div>
+  <div class="ex"><span class="n">0–8</span><span class="d"><b>Acessibilidade hoje</b>
+   Está na empresa, saiu, está numa ex-JV, ou o vínculo é a confirmar. Ex-colaborador vale
+   <em>mais</em> que ex-JV: quem saiu de vez fala sem amarra.</span></div>
+ </div>
+
+ <h3>Três decisões que custaram retrabalho</h3>
+ <ul>
+  <li><b>A checagem de função corporativa vem antes da cadeia de negócio.</b> Sem isso,
+   "VP HR Business Partner Commercial" cai como liderança comercial por causa da palavra
+   <code>commercial</code> e vai para o topo da fila.</li>
+  <li><b>"Global Title: Director" é descartado do título antes de qualquer análise.</b>
+   O LinkedIn brasileiro usa a expressão para declarar nível interno, não escopo. Sem limpar,
+   um Senior Trading Manager em São Paulo casa <code>global</code> e vira linha global — e pior,
+   casa <code>director</code> e infla a senioridade de 9 para 12, o que empurra a cadeia de 31
+   para 38.</li>
+  <li><b>Cadastro errado zera os quatro eixos que dependem da passagem pela empresa.</b>
+   Se o histórico público não registra a passagem, não há convívio a medir e o canal não
+   existe. Dizer isso é mais útil que devolver um número pequeno.</li>
+ </ul>
+
+ <h3>O que o sistema não afirma</h3>
+ <p>Organograma abaixo de diretoria raramente é público. A posição na cadeia é <b>inferência
+  marcada como inferência</b> — "reporte direto provável", não "reporta a". Afirmar linha de
+  reporte como fato é o erro mais fácil de cometer aqui, e o mais caro numa reunião.</p>
+ <p>Convívio sem histórico coletado recebe pontuação fixa e sai com a ressalva
+  "sobreposição estimada, não medida". Dado meio-validado apresentado como validado é pior
+  que dado cru.</p>
+</section>
+
+<footer>
+ <p>Demonstração pública · dados fictícios · Pedro Albertasse</p>
+ <p><a href="https://xigante.github.io/">Portfólio</a> ·
+    <a href="https://github.com/Xigante/triangulacao-c2c">Repositório</a></p>
+</footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var cards = [].slice.call(document.querySelectorAll('.ch'));
+  var pills = [].slice.call(document.querySelectorAll('.pill'));
+  var cnt = document.getElementById('cnt');
+  var total = cards.length;
+  pills.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = b.dataset.f, n = 0;
+      pills.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      cards.forEach(function (c) {
+        var on = (f === 'todos' || c.dataset.f === f);
+        c.classList.toggle('hide', !on);
+        if (on) n++;
+      });
+      cnt.textContent = n + ' de ' + total;
+    });
+  });
+})();
+</script>
+</body>
+</html>
