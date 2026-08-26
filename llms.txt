@@ -68,6 +68,14 @@ página não sustente. Tudo aqui é conferível nos links.
   notícias, geração de material comercial e auditoria de planilha.
 - **Ferramenta de auditoria 100% client-side:** conferência de um modelo de repartição de receita
   rodando inteiramente no navegador, com parsing local e persistência em IndexedDB. Nada trafega.
+- **[Triangulação de contato](https://github.com/Xigante/triangulacao-c2c)** (público, com
+  [demo no ar](https://xigante.github.io/triangulacao-c2c/demo.html)): dado um executivo-alvo,
+  devolve a fila ordenada de quem é o melhor canal para chegar nele, com quatro frases prontas por
+  pessoa. O score tem cinco eixos com tetos somando 108, normalizado para 0–100: cadeia de reporte
+  (0–38), convívio medido cargo a cargo (0–27), senioridade (0–15), etapa alcançada no funil (0–20)
+  e acessibilidade hoje (0–8). Uma rodada real validou 54 canais em 11 empresas. O código, os 38
+  testes e a especificação completa do score são públicos; os dados do demo são inteiramente
+  fictícios, porque o sistema real roda sobre base de candidatos com pessoas identificadas.
 - **Mapa de fundos × empresas investidas:** descoberta de portfólio por raspagem, cascata de
   fontes públicas e extração por LLM, com guard-rail que devolve zero em vez de chamar o modelo
   quando o conteúdo coletado é curto demais. 86 relações mapeadas.
