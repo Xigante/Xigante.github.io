@@ -959,7 +959,7 @@ section{scroll-margin-top:112px}
 
 /* menos movimento: o canvas fica num quadro parado, a nebulosa para de flutuar */
 @media(prefers-reduced-motion:reduce){
-  .mesh i{animation:none!important}
+  html:not([data-mov="on"]) .mesh i{animation:none!important}
 }
 
 /* Aqui havia uma máscara radial em #naves para apagar o jogo no miolo, onde
@@ -1028,7 +1028,7 @@ section{scroll-margin-top:112px}
 #cyber .grade{background-image:none}
 
 @media(prefers-reduced-motion:reduce){
-  #cyber .grade::before{animation:none}
+  html:not([data-mov="on"]) #cyber .grade::before{animation:none}
 }
 
 /* =========================================================================
@@ -1116,16 +1116,32 @@ section{scroll-margin-top:112px}
 }
 .hero .btn-y:hover::after{animation-play-state:paused}
 
-/* ── quem pediu menos movimento não recebe nada disso ── */
+/* ── sem movimento ──
+   Duas condições, e o atributo tem de vir junto da media query: quem pediu
+   movimento pela página recebe `data-mov="on"` no <html> e as regras abaixo
+   não podem valer para ele, mesmo com o sistema pedindo redução.
+   Por isso a media query é qualificada com :not([data-mov="on"]). */
 @media(prefers-reduced-motion:reduce){
-  .js-hero .hero h1 [data-pronto] .lt,
-  .js-hero .hero h1 [data-pronto].on .lt{
+  html:not([data-mov="on"]) .js-hero .hero h1 [data-pronto] .lt,
+  html:not([data-mov="on"]) .js-hero .hero h1 [data-pronto].on .lt{
     opacity:1!important;transform:none!important;filter:none!important;animation:none!important}
-  .js-hero .hero .kicker [data-pronto] .kw,
-  .js-hero .hero .kicker [data-pronto].on .kw{
+  html:not([data-mov="on"]) .js-hero .hero .kicker [data-pronto] .kw,
+  html:not([data-mov="on"]) .js-hero .hero .kicker [data-pronto].on .kw{
     opacity:1!important;transform:none!important;animation:none!important}
-  .hero .btn-y::after{display:none}
+  html:not([data-mov="on"]) .hero .btn-y::after{display:none}
 }
+/* e quem desligou o movimento pela página, mesmo sem o sistema pedir */
+html[data-mov="off"] .js-hero .hero h1 [data-pronto] .lt,
+html[data-mov="off"] .js-hero .hero h1 [data-pronto].on .lt{
+  opacity:1!important;transform:none!important;filter:none!important;animation:none!important}
+html[data-mov="off"] .js-hero .hero .kicker [data-pronto] .kw,
+html[data-mov="off"] .js-hero .hero .kicker [data-pronto].on .kw{
+  opacity:1!important;transform:none!important;animation:none!important}
+html[data-mov="off"] .hero .btn-y::after,
+html[data-mov="off"] .rolar-linha::after{animation:none}
+html[data-mov="off"] .rolar{opacity:1;animation:none}
+html[data-mov="off"] #cyber .grade::before,
+html[data-mov="off"] .mq-track{animation:none!important}
 
 /* ── indicação de rolagem ──
    Ocupa o vazio abaixo do CTA e é a única coisa do hero que se move sempre.
@@ -1156,9 +1172,40 @@ section{scroll-margin-top:112px}
   @keyframes desce{0%{transform:translate3d(0,-14px,0);opacity:0}22%{opacity:1}
     78%{opacity:1}100%{transform:translate3d(0,32px,0);opacity:0}}}
 @media(prefers-reduced-motion:reduce){
-  .rolar{opacity:1;animation:none}
-  .rolar-linha::after{animation:none;transform:translate3d(0,14px,0);opacity:.5}
+  html:not([data-mov="on"]) .rolar{opacity:1;animation:none}
+  html:not([data-mov="on"]) .rolar-linha::after{
+    animation:none;transform:translate3d(0,14px,0);opacity:.5}
 }
+
+/* =========================================================================
+   CONTROLE DE ANIMAÇÃO
+
+   A página respeita prefers-reduced-motion por padrão — isso está certo e
+   continua. O que faltava era o visitante poder contrariar. Sem isso, quem tem
+   a preferência ligada no sistema vê uma página parada e conclui que quebrou.
+   Foi exatamente o que aconteceu.
+   ========================================================================= */
+.mov-btn{display:inline-flex;align-items:center;padding:14px 12px!important;min-height:44px}
+.mov-btn svg{width:17px;height:17px}
+.mov-btn .mv-off{display:none}
+html[data-mov="off"] .mov-btn .mv-on{display:none}
+html[data-mov="off"] .mov-btn .mv-off{display:block}
+html[data-mov="on"] .mov-btn{color:var(--yellow)!important}
+.mov-btn:hover{color:var(--yellow)!important;background:rgba(255,221,51,.1)!important}
+
+/* o aviso: aparece só quando o sistema pede redução E ele não escolheu ainda */
+.mov-aviso{display:block;max-width:60ch;margin:30px auto 0;padding:12px 16px;
+  border-radius:11px;font-size:13px;line-height:1.55;color:var(--text-2);
+  background:rgba(255,221,51,.06);border:1px solid rgba(255,221,51,.2)}
+.mov-aviso[hidden]{display:none}
+.mov-aviso b{color:var(--text)}
+.mov-liga{display:inline-block;margin-left:7px;padding:5px 12px;border-radius:999px;
+  border:1.5px solid var(--yellow);background:transparent;color:var(--yellow);
+  font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  transition:background .2s,color .2s}
+.mov-liga:hover{background:var(--yellow);color:#170f00}
+.mov-liga:focus-visible{outline:2.5px solid var(--yellow);outline-offset:3px}
+@media(pointer:coarse){.mov-liga{min-height:44px}}
 
 </style>
 </head>
@@ -1185,6 +1232,14 @@ section{scroll-margin-top:112px}
     <a class="nl" href="#contato"><span class="l-pt">Contato</span><span class="l-en">Contact</span><span class="l-de">Kontakt</span><span class="l-it">Contatti</span></a>
     <span class="pill-sep" aria-hidden="true"></span>
     <button class="nl gm-btn" id="gm" aria-pressed="false" aria-label="Modo 8-bit / 8-bit mode"><svg class="px" style="width:16px" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true"><rect x="2" y="2" width="12" height="1" fill="#141018"/><rect x="1" y="3" width="1" height="1" fill="#141018"/><rect x="2" y="3" width="12" height="1" fill="#3A3A44"/><rect x="14" y="3" width="1" height="1" fill="#141018"/><rect x="0" y="4" width="1" height="1" fill="#141018"/><rect x="1" y="4" width="3" height="1" fill="#3A3A44"/><rect x="4" y="4" width="1" height="1" fill="#141018"/><rect x="5" y="4" width="6" height="1" fill="#3A3A44"/><rect x="11" y="4" width="1" height="1" fill="#E5392B"/><rect x="12" y="4" width="3" height="1" fill="#3A3A44"/><rect x="15" y="4" width="1" height="1" fill="#141018"/><rect x="0" y="5" width="1" height="1" fill="#141018"/><rect x="1" y="5" width="2" height="1" fill="#3A3A44"/><rect x="3" y="5" width="3" height="1" fill="#141018"/><rect x="6" y="5" width="7" height="1" fill="#3A3A44"/><rect x="13" y="5" width="1" height="1" fill="#E5392B"/><rect x="14" y="5" width="1" height="1" fill="#3A3A44"/><rect x="15" y="5" width="1" height="1" fill="#141018"/><rect x="0" y="6" width="1" height="1" fill="#141018"/><rect x="1" y="6" width="3" height="1" fill="#3A3A44"/><rect x="4" y="6" width="1" height="1" fill="#141018"/><rect x="5" y="6" width="6" height="1" fill="#3A3A44"/><rect x="11" y="6" width="1" height="1" fill="#6FD8E8"/><rect x="12" y="6" width="3" height="1" fill="#3A3A44"/><rect x="15" y="6" width="1" height="1" fill="#141018"/><rect x="0" y="7" width="1" height="1" fill="#141018"/><rect x="1" y="7" width="14" height="1" fill="#3A3A44"/><rect x="15" y="7" width="1" height="1" fill="#141018"/><rect x="0" y="8" width="1" height="1" fill="#141018"/><rect x="1" y="8" width="14" height="1" fill="#3A3A44"/><rect x="15" y="8" width="1" height="1" fill="#141018"/><rect x="1" y="9" width="2" height="1" fill="#141018"/><rect x="3" y="9" width="10" height="1" fill="#3A3A44"/><rect x="13" y="9" width="2" height="1" fill="#141018"/><rect x="2" y="10" width="12" height="1" fill="#141018"/></svg></button>
+    <button class="nl mov-btn" id="mov" aria-pressed="true"
+            aria-label="Animação da página / Page animation">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round">
+        <path class="mv-on" d="M4 12h3l2.5-7 5 14L17 12h3"/>
+        <path class="mv-off" d="M4 12h16"/>
+      </svg>
+    </button>
     <div class="langwrap">
       <button class="nl langbtn" id="lang" aria-haspopup="listbox" aria-expanded="false"
               aria-label="Idioma / Language"><span id="langNow">PT</span><i aria-hidden="true"></i></button>
@@ -1237,6 +1292,15 @@ section{scroll-margin-top:112px}
       </a>
       <a class="btn btn-ghost" href="https://github.com/Xigante" target="_blank" rel="noopener">GitHub</a>
     </div>
+    <p class="mov-aviso" id="movAviso" hidden>
+      <span class="l-pt">O seu sistema está com <b>movimento reduzido</b> ligado, então esta página ficou parada de propósito.</span>
+      <span class="l-en">Your system has <b>reduced motion</b> turned on, so this page is deliberately still.</span>
+      <span class="l-de">Ihr System hat <b>reduzierte Bewegung</b> aktiviert, deshalb steht diese Seite absichtlich still.</span>
+      <span class="l-it">Il tuo sistema ha il <b>movimento ridotto</b> attivo, quindi questa pagina è ferma di proposito.</span>
+      <button type="button" class="mov-liga" id="movLiga">
+        <span class="l-pt">Ligar a animação aqui</span><span class="l-en">Turn animation on here</span><span class="l-de">Animation hier einschalten</span><span class="l-it">Attiva l'animazione qui</span>
+      </button>
+    </p>
     <a class="rolar" href="#skills" aria-label="Rolar para as skills / Scroll to skills">
       <span class="rolar-txt" aria-hidden="true">
         <span class="l-pt">role</span><span class="l-en">scroll</span><span class="l-de">scrollen</span><span class="l-it">scorri</span>
@@ -2148,7 +2212,48 @@ section{scroll-margin-top:112px}
 (function () {
   'use strict';
   var root = document.documentElement;
-  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ═════════════════ MOVIMENTO: uma fonte da verdade ═════════════════
+     Antes cada arquivo lia `prefers-reduced-motion` por conta própria, e o
+     resultado era o que aconteceu na máquina do Pedro: o sistema dele tinha
+     "reduzir movimento" ligado, a página respeitou, e ele passou a achar que
+     o fundo estava quebrado. Respeitar a preferência é correto. Não dar como
+     desfazer é que estava errado.
+
+     Agora existe UM lugar que decide, e o visitante pode contrariar o
+     sistema pela própria página. Ordem:
+       1. escolha explícita salva por ele
+       2. prefers-reduced-motion do sistema
+     Isso é o padrão recomendado: o padrão segue o sistema, e o controle na
+     página devolve a decisão para quem está olhando. */
+  var GUARDA_MOV = 'pa_mov';
+  var SISTEMA_RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function movEscolhido() {
+    try {
+      var v = localStorage.getItem(GUARDA_MOV);
+      return (v === 'on' || v === 'off') ? v : null;
+    } catch (e) { return null; }
+  }
+  /* true = animar. Exposto no window porque os outros scripts leem daqui. */
+  window.__anima = function () {
+    var e = movEscolhido();
+    if (e) return e === 'on';
+    return !SISTEMA_RM.matches;
+  };
+  window.__movSistemaPede = function () { return SISTEMA_RM.matches; };
+  window.__movEscolhido = movEscolhido;
+  window.__movDefine = function (on) {
+    try { localStorage.setItem(GUARDA_MOV, on ? 'on' : 'off'); } catch (e) {}
+    root.dataset.mov = on ? 'on' : 'off';
+    /* recarrega: os motores montam estado no início (sprites, estrelas, o
+       quadro estático). Religar tudo a quente daria mais código e mais bug
+       que uma recarga de página, que aqui custa nada porque é um arquivo só. */
+    location.reload();
+  };
+  root.dataset.mov = window.__anima() ? 'on' : 'off';
+
+  var RM = !window.__anima();
 
   /* ═════════ SEO: endereço real da página ═════════
      O canonical vem gravado com o endereço recomendado. Se a página for
@@ -2439,7 +2544,9 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
 (function () {
   'use strict';
   var root = document.documentElement;
-  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* lê da fonte única em page_js.html: assim a escolha do visitante na
+     página vale para tudo, não só para o CSS */
+  var RM = window.__anima ? !window.__anima() : window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ═══════════════════════ TOAST ═══════════════════════ */
   var toast = document.getElementById('toast'), tmr;
@@ -3242,7 +3349,9 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
   if (!cv || !cv.getContext) return;
   var ctx = cv.getContext('2d', { alpha: true });
   var hero = document.getElementById('top');
-  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* lê da fonte única em page_js.html: assim a escolha do visitante na
+     página vale para tudo, não só para o CSS */
+  var RM = window.__anima ? !window.__anima() : window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ── paleta: a mesma família do site, para o fundo não virar outra marca ── */
   var C = {
@@ -3771,7 +3880,9 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
    ═══════════════════════════════════════════════════════════════════════════ */
 (function heroAnim() {
   'use strict';
-  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* lê da fonte única em page_js.html: assim a escolha do visitante na
+     página vale para tudo, não só para o CSS */
+  var RM = window.__anima ? !window.__anima() : window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var h1 = document.querySelector('.hero h1.display');
   var kicker = document.querySelector('.hero .kicker');
   if (!h1) return;
@@ -3878,6 +3989,33 @@ window.__SPR = {"hero-a": "<svg class=\"px\" viewBox=\"0 0 16 16\" width=\"16\" 
      quem tiver JS desligado veria o título invisível para sempre. */
   document.documentElement.classList.add('js-hero');
   window.__heroAnim(document.documentElement.dataset.lang || 'pt');
+})();
+
+/* ═══════════════════════════ CONTROLE DE ANIMAÇÃO ═══════════════════════════
+   O botão no nav liga e desliga. O aviso no hero só aparece para quem tem a
+   preferência do sistema ligada e ainda não escolheu — é a explicação de por
+   que a página está parada, no lugar onde a pessoa está olhando.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function controleMov() {
+  'use strict';
+  if (!window.__anima) return;
+  var bt = document.getElementById('mov');
+  var aviso = document.getElementById('movAviso');
+  var liga = document.getElementById('movLiga');
+  var animando = window.__anima();
+
+  if (bt) {
+    bt.setAttribute('aria-pressed', animando ? 'true' : 'false');
+    bt.addEventListener('click', function () { window.__movDefine(!window.__anima()); });
+  }
+
+  /* Mostra o aviso só se: o sistema pede redução, e ele nunca escolheu nada.
+     Depois que escolhe — para qualquer lado — o aviso não volta: já sabe que
+     existe o botão no topo. */
+  if (aviso && window.__movSistemaPede() && !window.__movEscolhido()) {
+    aviso.removeAttribute('hidden');
+  }
+  if (liga) liga.addEventListener('click', function () { window.__movDefine(true); });
 })();
 
 </script>

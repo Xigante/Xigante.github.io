@@ -793,3 +793,62 @@ Não é bug: é `prefers-reduced-motion`. Com "reduzir movimento" ligado no sist
 Configurações → Acessibilidade → Efeitos visuais → Efeitos de animação — o shooter desenha **um
 quadro só** e não liga o loop, e o título aparece sem a entrada letra por letra. É a preferência
 sendo respeitada, e é para continuar assim.
+
+---
+
+# O controle de animação, e por que ele existe
+
+A página respeitava `prefers-reduced-motion` — o que está certo — e não dava como desfazer, o que
+estava errado. Resultado real: a máquina do Pedro tinha "reduzir movimento" ligado no Windows, a
+página ficou parada de propósito, e ele concluiu que o fundo estava quebrado. Gravou vídeo para me
+mostrar. Diferença entre quadros consecutivos: **zero pixels**. Estava parada mesmo.
+
+## Uma fonte da verdade
+
+Antes, quatro arquivos liam `matchMedia('(prefers-reduced-motion: reduce)')` cada um por conta.
+Agora existe um lugar só, no topo de `page_js.html`:
+
+```js
+window.__anima = function () {
+  var e = movEscolhido();          // localStorage 'pa_mov'
+  if (e) return e === 'on';        // 1. escolha explícita do visitante
+  return !SISTEMA_RM.matches;      // 2. preferência do sistema
+};
+```
+
+`page_js2.html`, `page_naves.html` e `page_hero.html` leem `window.__anima()`. O `<html>` recebe
+`data-mov="on"` ou `"off"`, que é o que o CSS observa.
+
+**O CSS precisa das duas condições.** Não basta a media query: quem ligou o movimento pela página
+tem `data-mov="on"` e as regras de redução não podem valer para ele. Por isso toda media query de
+`prefers-reduced-motion` está qualificada:
+
+```css
+@media(prefers-reduced-motion:reduce){
+  html:not([data-mov="on"]) .rolar{animation:none}
+}
+html[data-mov="off"] .rolar{animation:none}
+```
+
+Se você acrescentar animação nova, precisa dos dois blocos. Só a media query deixa o botão sem
+efeito para aquela animação.
+
+## Os dois controles
+
+| Onde | O quê |
+|---|---|
+| Botão no nav (`#mov`) | liga e desliga, sempre visível, ícone de onda ↔ linha reta |
+| Aviso no hero (`#movAviso`) | aparece **só** quando o sistema pede redução **e** a pessoa nunca escolheu |
+
+O aviso explica por que a página está parada, no lugar onde a pessoa está olhando. Depois que ela
+escolhe — para qualquer lado — o aviso não volta: já sabe do botão no topo.
+
+`window.__movDefine(on)` grava e **recarrega a página**. Os motores montam estado no início
+(sprites, estrelas, o quadro estático), e religar tudo a quente daria mais código e mais bug que uma
+recarga, que aqui custa quase nada porque é um arquivo único.
+
+## O padrão continua sendo respeitar o sistema
+
+Quem chega com "reduzir movimento" ligado vê a página parada. Isso não mudou e não deve mudar — é
+uma questão de saúde para quem tem sensibilidade vestibular. O que mudou é que agora existe saída,
+e ela é explicada.
