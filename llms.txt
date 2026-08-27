@@ -51,7 +51,7 @@ página não sustente. Tudo aqui é conferível nos links.
 
 ## O que ele construiu
 
-- **Painel comercial dos 8 times setoriais** (`github.com/Xigante/lovable-setores-home`, privado):
+- **Painel Setores** (`github.com/Xigante/lovable-setores-home`, privado):
   substituiu a planilha de gestão de carteira. Oito portfólios unificados numa base de 48 tabelas
   e 107 migrations, com três visões sobre o mesmo dado — tabela, kanban de funil e grafo de
   relacionamento — e sincronização em tempo real entre sessões. React 19, TanStack, Supabase.
@@ -68,7 +68,7 @@ página não sustente. Tudo aqui é conferível nos links.
   notícias, geração de material comercial e auditoria de planilha.
 - **Ferramenta de auditoria 100% client-side:** conferência de um modelo de repartição de receita
   rodando inteiramente no navegador, com parsing local e persistência em IndexedDB. Nada trafega.
-- **[Triangulação de contato](https://github.com/Xigante/triangulacao-c2c)** (público, com
+- **[Ecossistemas empresariais](https://github.com/Xigante/triangulacao-c2c)** (público, com
   [demo no ar](https://xigante.github.io/triangulacao-c2c/demo.html)): dado um executivo-alvo,
   devolve a fila ordenada de quem é o melhor canal para chegar nele, com quatro frases prontas por
   pessoa. O score tem cinco eixos com tetos somando 108, normalizado para 0–100: cadeia de reporte

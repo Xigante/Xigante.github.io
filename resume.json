@@ -188,7 +188,7 @@
       ]
     },
     {
-      "name": "Commercial dashboard for 8 sector teams",
+      "name": "Sectors dashboard — commercial dashboard for 8 sector teams",
       "description": "Replaced the portfolio management spreadsheet: eight tables consolidated into one base of 48 tables and 107 migrations, three views over the same data (table, funnel kanban, relationship graph) and realtime sync across sessions.",
       "keywords": [
         "React 19",
@@ -200,7 +200,7 @@
       "startDate": "2025-10"
     },
     {
-      "name": "Contact triangulation engine",
+      "name": "Business ecosystems — contact triangulation engine",
       "description": "Given a target executive, returns a strictly ordered queue of who is the best channel to reach them, with four ready-to-say sentences per person. Five scoring axes with caps summing to 108, normalised to 0-100: reporting chain (0-38), overlap measured role by role (0-27), seniority (0-15), stage reached in the pipeline (0-20) and reachability today (0-8). One real run validated 54 channels across 11 companies. Engine, 38 tests and the full score specification are public; the demo data is entirely fictional because the production system runs on a candidate base with identified individuals.",
       "keywords": [
         "Python",
